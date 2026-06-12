@@ -76,14 +76,23 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
     const r = deps.repo.getRequest(id);
     if (!r || !canViewRequest(user, r)) return c.text("Bulunamadı", 404);
     if (!canReply(user, r)) return c.text("Şu an cevap veremezsiniz", 403);
-    const parsed = replySchema.safeParse(await body(c));
+    const form = await body(c);
+    const parsed = replySchema.safeParse(form);
     if (!parsed.success) return c.text("Geçersiz cevap", 400);
-    deps.repo.addMessageAndTransition(
-      r.id,
-      { role: "requester", body: parsed.data.body },
-      "answered",
-      deps.now(),
-    );
+    const up = await processUploads(collectFiles(form), deps.storage);
+    if (!up.ok) return c.text(up.errors.join(" "), 400);
+    try {
+      deps.repo.addMessageAndTransition(
+        r.id,
+        { role: "requester", body: parsed.data.body },
+        "answered",
+        deps.now(),
+        up.attachments,
+      );
+    } catch (err) {
+      await discardUploads(deps.storage, up.attachments);
+      throw err;
+    }
     for (const admin of deps.config.adminEmails) {
       await deps.mailer.send(
         admin,

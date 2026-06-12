@@ -148,16 +148,18 @@ export function requestDetail(opts: {
   </div>`;
   const input = `class="w-full border rounded px-3 py-2"`;
   const replyBox = canReply
-    ? `<form method="post" action="/requests/${r.id}/reply" class="bg-white border rounded p-4 mt-4">
+    ? `<form method="post" action="/requests/${r.id}/reply" enctype="multipart/form-data" class="bg-white border rounded p-4 mt-4">
         <input type="hidden" name="_csrf" value="${esc(csrf)}">
         <textarea ${input} name="body" rows="3" placeholder="Cevabınız..." required></textarea>
+        <input type="file" name="files" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" class="block w-full text-sm mt-2">
         <button class="bg-slate-800 text-white px-4 py-2 rounded mt-2">Cevapla</button>
       </form>`
     : "";
   const adminBox = isAdmin
-    ? `<form method="post" action="/admin/requests/${r.id}/message" class="bg-white border rounded p-4 mt-4">
+    ? `<form method="post" action="/admin/requests/${r.id}/message" enctype="multipart/form-data" class="bg-white border rounded p-4 mt-4">
         <input type="hidden" name="_csrf" value="${esc(csrf)}">
         <textarea ${input} name="body" rows="3" placeholder="Netleştirme sorusu..." required></textarea>
+        <input type="file" name="files" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" class="block w-full text-sm mt-2">
         <button class="bg-slate-800 text-white px-4 py-2 rounded mt-2">Soru ekle</button>
       </form>
       <form method="post" action="/admin/requests/${r.id}/decision" class="bg-white border rounded p-4 mt-4">

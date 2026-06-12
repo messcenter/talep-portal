@@ -5,6 +5,7 @@ import { body } from "../app";
 import { messageSchema, decisionSchema } from "../domain/validation";
 import { canTransition } from "../domain/status";
 import { adminList, requestDetail, esc } from "../views/views";
+import { collectFiles, processUploads, discardUploads } from "./uploads";
 
 function requireAdmin(c: any): boolean {
   return c.get("user")?.isAdmin === true;
@@ -25,16 +26,25 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
     if (!Number.isInteger(id)) return c.text("Bulunamadı", 404);
     const r = deps.repo.getRequest(id);
     if (!r) return c.text("Bulunamadı", 404);
-    const parsed = messageSchema.safeParse(await body(c));
+    const form = await body(c);
+    const parsed = messageSchema.safeParse(form);
     if (!parsed.success) return c.text("Geçersiz soru", 400);
     if (!canTransition(r.status, "clarifying"))
       return c.text("Bu talep kapalı", 409);
-    deps.repo.addMessageAndTransition(
-      r.id,
-      { role: "admin", body: parsed.data.body },
-      "clarifying",
-      deps.now(),
-    );
+    const up = await processUploads(collectFiles(form), deps.storage);
+    if (!up.ok) return c.text(up.errors.join(" "), 400);
+    try {
+      deps.repo.addMessageAndTransition(
+        r.id,
+        { role: "admin", body: parsed.data.body },
+        "clarifying",
+        deps.now(),
+        up.attachments,
+      );
+    } catch (err) {
+      await discardUploads(deps.storage, up.attachments);
+      throw err;
+    }
     await deps.mailer.send(
       r.requester_email,
       `Talebiniz hakkında soru: ${r.request_no}`,

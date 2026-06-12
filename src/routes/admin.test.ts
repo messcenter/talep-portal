@@ -99,6 +99,21 @@ describe("admin message", () => {
     expect(repo.getRequest(r.id)?.status).toBe("clarifying");
     expect(sent.some((m) => m.to === "a@kokilmetal.com.tr")).toBe(true);
   });
+
+  test("admin question can carry an attachment", async () => {
+    const r = repo.createRequest(sample, "t");
+    const fd = new FormData();
+    fd.append("_csrf", "test-csrf");
+    fd.append("body", "şu ekrana bakın");
+    fd.append("files", new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], "q.png", { type: "image/png" }));
+    const res = await app.request(`/admin/requests/${r.id}/message`, {
+      method: "POST",
+      headers: { Cookie: adminCookie() },
+      body: fd,
+    });
+    expect(res.status).toBe(302);
+    expect(repo.listAttachmentsByRequest(r.id).length).toBe(1);
+  });
 });
 
 describe("admin decision", () => {

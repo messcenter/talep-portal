@@ -241,4 +241,29 @@ describe("reply flow", () => {
     expect(res.status).toBe(302);
     expect(repo.getRequest(r.id)?.status).toBe("answered");
   });
+
+  test("reply can carry an attachment", async () => {
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "f", priority: "high" },
+      "t",
+    );
+    repo.updateStatus(r.id, "clarifying");
+    const fd = new FormData();
+    fd.append("_csrf", "test-csrf");
+    fd.append("body", "cevabım ekte");
+    fd.append("files", new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])], "ek.pdf", { type: "application/pdf" }));
+    const res = await app.request(`/requests/${r.id}/reply`, {
+      method: "POST",
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+      body: fd,
+    });
+    expect(res.status).toBe(302);
+    const atts = repo.listAttachmentsByRequest(r.id);
+    expect(atts.length).toBe(1);
+    expect(atts[0]!.message_id).not.toBeNull();
+    expect(atts[0]!.mime).toBe("application/pdf");
+  });
 });
