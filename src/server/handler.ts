@@ -8,6 +8,8 @@ import { getSessionUser, checkCsrf, MAX_UPLOAD_BYTES } from "./guards";
 import { serializeCookie } from "./cookies";
 import { handleRequests } from "./routes/requests";
 import { handleAdmin } from "./routes/admin";
+import { handleAuth } from "./routes/auth";
+import { handleAttachment } from "./routes/attachments";
 
 export type Deps = {
   config: Config;
@@ -79,6 +81,15 @@ export function makeHandler(deps: Deps) {
 
       return json({ error: "not found" }, 404, extraHeaders);
     }
+
+    // Auth / OAuth routes (CSRF-exempt — they establish the session, not mutate app state)
+    if (path.startsWith("/auth/") || path === "/logout") {
+      return handleAuth(ctx, deps);
+    }
+
+    // Attachment binary serving (auth-gated inside the handler)
+    const att = await handleAttachment(ctx, deps);
+    if (att) return att;
 
     return text("Not found", 404);
   };
