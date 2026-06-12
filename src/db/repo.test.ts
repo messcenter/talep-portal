@@ -83,3 +83,15 @@ describe("repo listing", () => {
     expect(repo.listAll({}).length).toBe(2);
   });
 });
+
+describe("updateStatus invariant", () => {
+  test("rejects illegal transition out of terminal state", () => {
+    const r = repo.createRequest(baseInput, "t");
+    repo.updateStatus(r.id, "accepted");
+    expect(() => repo.updateStatus(r.id, "clarifying")).toThrow();
+    expect(repo.getRequest(r.id)?.status).toBe("accepted");
+  });
+  test("throws when request does not exist", () => {
+    expect(() => repo.updateStatus(9999, "clarifying")).toThrow();
+  });
+});

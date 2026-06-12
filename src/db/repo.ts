@@ -1,7 +1,7 @@
 // src/db/repo.ts
 import type { Database } from "bun:sqlite";
 import { formatRequestNo } from "../domain/request-no";
-import type { RequestStatus } from "../domain/status";
+import { canTransition, type RequestStatus } from "../domain/status";
 import type { NewRequestInput } from "../domain/validation";
 
 export type RequestRow = {
@@ -100,9 +100,14 @@ export function makeRepo(db: Database) {
         clauses.push("priority = $priority");
         params.$priority = filter.priority;
       }
-      const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+      if (clauses.length === 0) {
+        return db
+          .query<RequestRow, []>("SELECT * FROM requests ORDER BY id DESC")
+          .all();
+      }
+      const where = `WHERE ${clauses.join(" AND ")}`;
       return db
-        .query<RequestRow, any>(
+        .query<RequestRow, Record<string, string>>(
           `SELECT * FROM requests ${where} ORDER BY id DESC`,
         )
         .all(params);
@@ -129,6 +134,15 @@ export function makeRepo(db: Database) {
     },
 
     updateStatus(id: number, status: RequestStatus): void {
+      const current = db
+        .query<{ status: RequestStatus }, [number]>(
+          "SELECT status FROM requests WHERE id = ?",
+        )
+        .get(id);
+      if (!current) throw new Error(`request ${id} not found`);
+      if (!canTransition(current.status, status)) {
+        throw new Error(`illegal transition ${current.status} -> ${status}`);
+      }
       db.query("UPDATE requests SET status = ? WHERE id = ?").run(status, id);
     },
   };
