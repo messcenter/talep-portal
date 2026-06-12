@@ -25,6 +25,7 @@ describe("status state machine", () => {
   test("reject allowed from any non-terminal", () => {
     expect(canTransition("new", "rejected")).toBe(true);
     expect(canTransition("answered", "rejected")).toBe(true);
+    expect(canTransition("clarifying", "rejected")).toBe(true);
   });
   test("terminal statuses cannot transition out", () => {
     expect(isTerminal("accepted")).toBe(true);
@@ -35,8 +36,11 @@ describe("status state machine", () => {
   test("illegal: new -> answered (requester cannot reply before question)", () => {
     expect(canTransition("new", "answered")).toBe(false);
   });
-  test("TR labels", () => {
+  test("TR labels for all statuses", () => {
     expect(statusLabelTr("new")).toBe("Yeni");
+    expect(statusLabelTr("clarifying")).toBe("Netleştiriliyor");
+    expect(statusLabelTr("answered")).toBe("Cevaplandı");
+    expect(statusLabelTr("accepted")).toBe("Kabul edildi");
     expect(statusLabelTr("rejected")).toBe("Reddedildi");
   });
 });

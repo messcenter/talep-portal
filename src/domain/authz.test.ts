@@ -16,6 +16,11 @@ describe("isAdmin", () => {
       false,
     );
   });
+  test("matches allowlist entries that are not pre-lowercased", () => {
+    expect(isAdmin("boss@kokilmetal.com.tr", ["Boss@Kokilmetal.com.tr"])).toBe(
+      true,
+    );
+  });
 });
 
 describe("canViewRequest", () => {

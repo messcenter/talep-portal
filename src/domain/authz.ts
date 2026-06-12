@@ -8,7 +8,8 @@ export type RequestRef = {
 };
 
 export function isAdmin(email: string, adminEmails: string[]): boolean {
-  return adminEmails.includes(email.trim().toLowerCase());
+  const target = email.trim().toLowerCase();
+  return adminEmails.some((a) => a.trim().toLowerCase() === target);
 }
 
 export function canViewRequest(user: User, req: RequestRef): boolean {
