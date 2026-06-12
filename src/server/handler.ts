@@ -6,6 +6,7 @@ import type { Storage } from "../storage/storage";
 import { makeCtx } from "./context";
 import { getSessionUser, checkCsrf, MAX_UPLOAD_BYTES } from "./guards";
 import { serializeCookie } from "./cookies";
+import { handleRequests } from "./routes/requests";
 
 export type Deps = {
   config: Config;
@@ -66,6 +67,10 @@ export function makeHandler(deps: Deps) {
       if (path === "/api/me" && method === "GET") {
         return json(user, 200, extraHeaders);
       }
+
+      // Requests API: /api/my, /api/requests, /api/requests/:id, /api/requests/:id/reply
+      const requestsRes = await handleRequests(path, method, req, user, extraHeaders, deps);
+      if (requestsRes) return requestsRes;
 
       return json({ error: "not found" }, 404, extraHeaders);
     }
