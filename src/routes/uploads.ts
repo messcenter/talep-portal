@@ -10,6 +10,7 @@ import type { AttachmentInput } from "../db/repo";
 export function collectFiles(form: Record<string, any>): File[] {
   const raw = form["files"];
   const arr = Array.isArray(raw) ? raw : raw != null ? [raw] : [];
+  // Keep only real uploads; ignore non-File values and zero-byte entries.
   return arr.filter((f): f is File => f instanceof File && f.size > 0);
 }
 
@@ -35,8 +36,9 @@ export async function processUploads(
   const written: string[] = [];
   try {
     for (let i = 0; i < files.length; i++) {
-      const mime = v.mimes[i]!;
-      const ext = extForMime(mime)!;
+      const mime = v.mimes[i]!; // index-safe: i < files.length === mimes.length
+      const ext = extForMime(mime);
+      if (!ext) throw new Error(`no extension mapping for sniffed mime ${mime}`);
       const key = storageKey(randomUUID(), ext);
       await storage.put(key, buffers[i]!);
       written.push(key);

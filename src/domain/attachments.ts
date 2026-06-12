@@ -39,11 +39,9 @@ export function sniffMime(head: Uint8Array): string | null {
 
 export type UploadMeta = { name: string; size: number; head: Uint8Array };
 
-export function validateUploads(files: UploadMeta[]): {
-  ok: boolean;
-  errors: string[];
-  mimes: (string | null)[];
-} {
+export function validateUploads(files: UploadMeta[]):
+  | { ok: true; errors: string[]; mimes: string[] }
+  | { ok: false; errors: string[]; mimes: (string | null)[] } {
   const errors: string[] = [];
   if (files.length > MAX_FILES)
     errors.push(`En fazla ${MAX_FILES} dosya yükleyebilirsiniz.`);
@@ -51,15 +49,16 @@ export function validateUploads(files: UploadMeta[]): {
   for (const f of files) {
     const mime = sniffMime(f.head);
     mimes.push(mime);
-    // Zero-length files: report once and skip the size/mime errors for this entry.
     if (f.size <= 0) {
+      // Zero-length files: report once and skip the size/mime errors for this entry.
       errors.push(`Boş dosya: ${f.name}`);
       continue;
     }
     if (f.size > MAX_FILE_BYTES) errors.push(`${f.name}: dosya 10 MB sınırını aşıyor.`);
     if (!mime) errors.push(`${f.name}: yalnızca PNG, JPEG, WebP, GIF ve PDF kabul edilir.`);
   }
-  return { ok: errors.length === 0, errors, mimes };
+  if (errors.length === 0) return { ok: true, errors, mimes: mimes as string[] };
+  return { ok: false, errors, mimes };
 }
 
 // Centralizes the on-disk key format; the storage layer depends on this exact shape.
