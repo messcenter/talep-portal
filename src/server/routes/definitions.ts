@@ -79,9 +79,7 @@ export async function handleDefinitions(
     m = path.match(/^\/api\/admin\/modules\/(\d+)$/);
     if (m && method === "DELETE") {
       const id = Number(m[1]);
-      const existed = deps.repo.listDepartmentsWithModules()
-        .some((d) => d.modules.some((mo) => mo.id === id));
-      if (!existed) return json({ error: "not found" }, 404, extraHeaders);
+      if (!deps.repo.getModule(id)) return json({ error: "not found" }, 404, extraHeaders);
       deps.repo.deleteModule(id);
       return new Response(null, { status: 204, headers: extraHeaders });
     }

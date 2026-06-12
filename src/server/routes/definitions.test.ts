@@ -201,6 +201,14 @@ describe("DELETE /api/admin/modules/:id", () => {
     }));
     expect(res.status).toBe(204);
   });
+
+  test("nonexistent module → 404", async () => {
+    const res = await handler(new Request(`http://x/api/admin/modules/99999`, {
+      method: "DELETE",
+      headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(404);
+  });
 });
 
 // ─── DELETE /api/admin/departments/:id ───────────────────────────────────────

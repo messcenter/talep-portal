@@ -222,6 +222,9 @@ export function makeRepo(db: Database) {
     deleteModule(id: number): void {
       db.query(`DELETE FROM modules WHERE id = ?`).run(id);
     },
+    getModule(id: number): ModuleRow | null {
+      return (db.query(`SELECT * FROM modules WHERE id = ?`).get(id) as ModuleRow) ?? null;
+    },
     listModuleNames(departmentId: number): string[] {
       return (db.query(`SELECT name FROM modules WHERE department_id = ? ORDER BY name`)
         .all(departmentId) as { name: string }[]).map((r) => r.name);
