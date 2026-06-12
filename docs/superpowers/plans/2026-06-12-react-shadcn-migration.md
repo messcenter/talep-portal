@@ -1,3 +1,7 @@
+> **⚠️ SUPERSEDED (2026-06-12):** Bu SSR yaklaşımı bırakıldı. Yeni yön: Bun.serve fullstack SPA. Bkz. `docs/superpowers/specs/2026-06-12-bun-spa-migration-design.md`. Tasks 1-2 (shadcn bileşenleri, tailwind, cn) yeni yönde de geçerli; render.tsx ve Hono serveStatic atılacak.
+
+---
+
 # React + shadcn Görünüm Migrasyonu — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -419,7 +423,7 @@ export function Layout({
   children: ReactNode;
 }) {
   return (
-    <body className="bg-surface text-on-surface min-h-screen">
+    <>
       <header className="bg-white border-b border-border-subtle">
         <div className="max-w-container mx-auto px-4 py-3 flex items-center justify-between">
           <a href="/" className="font-semibold text-primary">Talep Portalı</a>
@@ -437,11 +441,11 @@ export function Layout({
         </div>
       </header>
       <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
-    </body>
+    </>
   );
 }
 ```
-Not: `<body>` döndürür çünkü `render(title, body)` bunu `<html>` içine koyar. Logout formu kasıtlı olarak `_csrf` taşımaz (mevcut sözleşme: `/logout` CSRF muaf).
+Not: Layout bir **fragment** döndürür (header + main); `render(title, body)` bunu `<body>` içine sarar (Task 1 fix sonrası render `<body>`'nin sahibidir). Logout formu kasıtlı olarak `_csrf` taşımaz (mevcut sözleşme: `/logout` CSRF muaf).
 
 - [ ] **Step 2: Derleme/tip kontrolü**
 
@@ -1274,7 +1278,7 @@ Not: JS yoksa span içindeki native "Reddet" butonu aynı form'u submit eder (me
 
 - [ ] **Step 5: render.tsx'e client.js ekle (yalnız gerekli sayfalar)**
 
-`src/render.tsx`'i, opsiyonel bir `withClient` bayrağı alacak şekilde güncelle:
+`src/render.tsx`'i, opsiyonel bir `withClient` bayrağı alacak şekilde güncelle (render artık `<body>`'nin sahibi — Task 1 fix sonrası):
 ```tsx
 export function render(title: string, body: ReactElement, withClient = false): string {
   return "<!doctype html>" + renderToStaticMarkup(
@@ -1285,15 +1289,15 @@ export function render(title: string, body: ReactElement, withClient = false): s
         <title>{`${title} · Talep Portalı`}</title>
         <link rel="stylesheet" href="/app.css" />
       </head>
-      <>
+      <body className="min-h-screen">
         {body}
-        {withClient ? <script src="/client.js" defer></script> : null}
-      </>
+        {withClient ? <script src="/client.js" defer /> : null}
+      </body>
     </html>,
   );
 }
 ```
-Not: `<body>` ve `<script>` aynı seviyede olmalı; React fragment ile sar. Alternatif: script'i Layout `<body>` sonuna koy. Eğer fragment `<html>` çocuğu olarak sorun çıkarırsa, `withClient` script'ini `Layout`'a prop olarak geçir.
+Not: `<script>` `<body>` sonunda; `defer` ile DOM hazır olunca çalışır.
 
 `src/views/views.tsx` içinde `requestDetail` çağrısını güncelle:
 ```ts

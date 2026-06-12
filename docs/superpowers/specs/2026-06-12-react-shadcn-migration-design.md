@@ -1,3 +1,7 @@
+> **⚠️ SUPERSEDED (2026-06-12):** Bu SSR yaklaşımı bırakıldı. Yeni yön: Bun.serve fullstack SPA. Bkz. `docs/superpowers/specs/2026-06-12-bun-spa-migration-design.md`. Tasks 1-2 (shadcn bileşenleri, tailwind, cn) yeni yönde de geçerli; render.tsx ve Hono serveStatic atılacak.
+
+---
+
 # React + shadcn Görünüm Katmanı Migrasyonu — Tasarım
 
 - **Tarih:** 2026-06-12
