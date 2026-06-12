@@ -401,4 +401,17 @@ describe("POST /api/requests/:id/reply", () => {
     expect(atts[0]!.mime).toBe("application/pdf");
     expect(atts[0]!.message_id).not.toBeNull();
   });
+
+  test("CSRF symmetry: POST without X-CSRF-Token → 403, message NOT persisted", async () => {
+    const r = seedClarifyingRequest();
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/reply`, {
+      method: "POST",
+      body: replyForm(),
+      headers: { cookie: authedCookie() }, // csrf cookie present but no x-csrf-token header
+    }));
+    expect(res.status).toBe(403);
+    // No messages persisted; status unchanged.
+    expect(repo.listMessages(r.id).length).toBe(0);
+    expect(repo.getRequest(r.id)?.status).toBe("clarifying");
+  });
 });

@@ -7,6 +7,7 @@ import { makeCtx } from "./context";
 import { getSessionUser, checkCsrf, MAX_UPLOAD_BYTES } from "./guards";
 import { serializeCookie } from "./cookies";
 import { handleRequests } from "./routes/requests";
+import { handleAdmin } from "./routes/admin";
 
 export type Deps = {
   config: Config;
@@ -71,6 +72,10 @@ export function makeHandler(deps: Deps) {
       // Requests API: /api/my, /api/requests, /api/requests/:id, /api/requests/:id/reply
       const requestsRes = await handleRequests(path, method, req, user, extraHeaders, deps);
       if (requestsRes) return requestsRes;
+
+      // Admin API: /api/admin/requests, /api/admin/requests/:id/message|decision
+      const adminRes = await handleAdmin(path, method, req, user, extraHeaders, deps);
+      if (adminRes) return adminRes;
 
       return json({ error: "not found" }, 404, extraHeaders);
     }

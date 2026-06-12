@@ -9,7 +9,7 @@ import { esc } from "../../views/views";
 
 /** Parse a Bun Request's multipart body into a plain Record, normalizing
  * multiple values for the same key into an array (used for `files`). */
-async function parseForm(req: Request): Promise<Record<string, any>> {
+export async function parseForm(req: Request): Promise<Record<string, any>> {
   const fd = await req.formData();
   const out: Record<string, any> = {};
   for (const [k, v] of fd.entries()) {
