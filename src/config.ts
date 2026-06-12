@@ -26,6 +26,7 @@ const ConfigSchema = z.object({
   smtpPass: z.string().default(""),
   mailFrom: z.string().min(1),
   dbPath: z.string().default("data.db"),
+  uploadDir: z.string().default("uploads"),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -46,5 +47,6 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     smtpPass: env.SMTP_PASS,
     mailFrom: env.MAIL_FROM,
     dbPath: env.DB_PATH,
+    uploadDir: env.UPLOAD_DIR,
   });
 }
