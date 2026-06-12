@@ -82,9 +82,17 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
     const bytes = await deps.storage.read(att.storage_key);
     if (!bytes) return c.text("Bulunamadı", 404);
     const safeName = att.original_name.replace(/[\r\n"\\]/g, "_");
-    c.header("Content-Type", att.mime);
+    // Defense in depth: only serve the sniff-allowed types inline with their real
+    // content-type; force anything else to a non-rendering download. The CSP sandbox
+    // neutralizes active content (e.g. JS in a PDF) even for allowlisted types.
+    const SAFE_INLINE = new Set([
+      "image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf",
+    ]);
+    const inlineOk = SAFE_INLINE.has(att.mime);
+    c.header("Content-Type", inlineOk ? att.mime : "application/octet-stream");
     c.header("X-Content-Type-Options", "nosniff");
-    c.header("Content-Disposition", `inline; filename="${safeName}"`);
+    c.header("Content-Security-Policy", "sandbox; default-src 'none'");
+    c.header("Content-Disposition", `${inlineOk ? "inline" : "attachment"}; filename="${safeName}"`);
     c.header("Cache-Control", "private, max-age=300");
     return c.body(bytes);
   });

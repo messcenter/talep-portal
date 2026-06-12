@@ -290,6 +290,8 @@ describe("serve attachment", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/png");
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("content-disposition")).toContain("inline");
+    expect(res.headers.get("content-security-policy")).toContain("sandbox");
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
   });
 
@@ -306,5 +308,25 @@ describe("serve attachment", () => {
       headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
     });
     expect(res.status).toBe(404);
+  });
+
+  test("non-allowlisted mime is forced to a sandboxed download (no inline XSS)", async () => {
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "f", priority: "high" },
+      "t",
+      [{ storage_key: "evil.html", original_name: "evil.html", mime: "text/html", size_bytes: 5 }],
+    );
+    mem.store.set("evil.html", new Uint8Array([60, 33, 45, 45, 62]));
+    const att = repo.listAttachmentsByRequest(r.id)[0]!;
+    const res = await app.request(`/requests/${r.id}/attachments/${att.id}`, {
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/octet-stream");
+    expect(res.headers.get("content-disposition")).toContain("attachment");
+    expect(res.headers.get("content-security-policy")).toContain("sandbox");
   });
 });
