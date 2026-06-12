@@ -45,14 +45,21 @@ export function makeHandler(deps: Deps) {
       let csrf = ctx.cookies["csrf"];
       if (!csrf) {
         csrf = crypto.randomUUID();
-        extraHeaders["set-cookie"] = serializeCookie("csrf", csrf, { sameSite: "Lax", path: "/" });
+        extraHeaders["set-cookie"] = serializeCookie("csrf", csrf, {
+          sameSite: "Lax", path: "/",
+          secure: deps.config.appBaseUrl.startsWith("https"),
+        });
       }
 
-      // CSRF enforcement on mutating /api requests.
-      if (method === "POST") {
+      // CSRF + size enforcement on all mutating /api requests.
+      const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+      if (MUTATING.has(method)) {
+        // Fast-path reject on declared size. NOT authoritative — Content-Length can be
+        // absent/chunked/spoofed; the real cap is Bun.serve maxRequestBodySize (A5) +
+        // actual body-size check in the multipart handlers (A2).
         const len = Number(req.headers.get("content-length") ?? "0");
-        if (Number.isFinite(len) && len > MAX_UPLOAD_BYTES) return json({ error: "too large" }, 413);
-        if (!checkCsrf(ctx)) return json({ error: "csrf" }, 403);
+        if (Number.isFinite(len) && len > MAX_UPLOAD_BYTES) return json({ error: "too large" }, 413, extraHeaders);
+        if (!checkCsrf(ctx)) return json({ error: "csrf" }, 403, extraHeaders);
       }
 
       // --- routes ---

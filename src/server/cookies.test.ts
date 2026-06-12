@@ -25,3 +25,10 @@ test("serializeCookie omits HttpOnly when not set (for csrf cookie)", () => {
 test("expireCookie sets Max-Age=0", () => {
   expect(expireCookie("session")).toContain("Max-Age=0");
 });
+
+test("parseCookies does not throw on malformed percent-encoding", () => {
+  expect(() => parseCookies("session=%GG; a=ok")).not.toThrow();
+  const out = parseCookies("session=%GG; a=ok");
+  expect(out.a).toBe("ok");
+  expect(out.session).toBe("%GG"); // falls back to raw value
+});

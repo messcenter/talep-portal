@@ -83,3 +83,20 @@ test("unknown /api route → 404", async () => {
   const res = await handler(new Request("http://x/api/nope", { headers: { cookie: authedCookie() } }));
   expect(res.status).toBe(404);
 });
+
+test("POST to /api without X-CSRF-Token → 403 and still delivers a csrf cookie (bootstrap)", async () => {
+  const res = await handler(new Request("http://x/api/me", {
+    method: "POST",
+    headers: { cookie: authedCookie() },
+  }));
+  expect(res.status).toBe(403);
+  expect(res.headers.get("set-cookie") ?? "").toContain("csrf=");
+});
+
+test("POST with matching csrf cookie+header passes csrf gate (then 404 on GET-only route)", async () => {
+  const res = await handler(new Request("http://x/api/me", {
+    method: "POST",
+    headers: { cookie: `${authedCookie()}; csrf=tok`, "x-csrf-token": "tok" },
+  }));
+  expect(res.status).toBe(404); // csrf ok, but /api/me is GET-only
+});
