@@ -13,3 +13,8 @@
 
 ## Yedekleme
 `data.db` dosyasını kopyala.
+
+## Dağıtım notu (air-gapped ağ)
+Arayüz stilleri `https://cdn.tailwindcss.com` üzerinden yüklenir. İnternet erişimi
+olmayan (air-gapped) bir iç ağda çalıştırılacaksa, Tailwind'i yerel bir kopyayla
+değiştirin; aksi halde sayfalar stilsiz görünür.

@@ -95,3 +95,27 @@ describe("updateStatus invariant", () => {
     expect(() => repo.updateStatus(9999, "clarifying")).toThrow();
   });
 });
+
+describe("addMessageAndTransition (atomic)", () => {
+  test("adds message and transitions together", () => {
+    const r = repo.createRequest(baseInput, "t");
+    repo.addMessageAndTransition(r.id, { role: "admin", body: "soru?" }, "clarifying", "t2");
+    expect(repo.getRequest(r.id)?.status).toBe("clarifying");
+    expect(repo.listMessages(r.id).length).toBe(1);
+  });
+  test("transitions with no message when message is null", () => {
+    const r = repo.createRequest(baseInput, "t");
+    repo.addMessageAndTransition(r.id, null, "accepted", "t2");
+    expect(repo.getRequest(r.id)?.status).toBe("accepted");
+    expect(repo.listMessages(r.id).length).toBe(0);
+  });
+  test("rolls back the message insert on illegal transition", () => {
+    const r = repo.createRequest(baseInput, "t");
+    repo.updateStatus(r.id, "accepted");
+    expect(() =>
+      repo.addMessageAndTransition(r.id, { role: "admin", body: "x" }, "clarifying", "t2"),
+    ).toThrow();
+    expect(repo.listMessages(r.id).length).toBe(0);
+    expect(repo.getRequest(r.id)?.status).toBe("accepted");
+  });
+});

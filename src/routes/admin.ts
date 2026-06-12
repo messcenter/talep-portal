@@ -29,8 +29,12 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
     if (!parsed.success) return c.text("Geçersiz soru", 400);
     if (!canTransition(r.status, "clarifying"))
       return c.text("Bu talep kapalı", 409);
-    deps.repo.addMessage(r.id, "admin", parsed.data.body, deps.now());
-    deps.repo.updateStatus(r.id, "clarifying");
+    deps.repo.addMessageAndTransition(
+      r.id,
+      { role: "admin", body: parsed.data.body },
+      "clarifying",
+      deps.now(),
+    );
     await deps.mailer.send(
       r.requester_email,
       `Talebiniz hakkında soru: ${r.request_no}`,
@@ -50,9 +54,12 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
     const target = parsed.data.decision === "accept" ? "accepted" : "rejected";
     if (!canTransition(r.status, target))
       return c.text("Bu talep zaten kapalı", 409);
-    if (parsed.data.reason)
-      deps.repo.addMessage(r.id, "admin", parsed.data.reason, deps.now());
-    deps.repo.updateStatus(r.id, target);
+    deps.repo.addMessageAndTransition(
+      r.id,
+      parsed.data.reason ? { role: "admin", body: parsed.data.reason } : null,
+      target,
+      deps.now(),
+    );
     await deps.mailer.send(
       r.requester_email,
       `Talep ${target === "accepted" ? "kabul edildi" : "reddedildi"}: ${r.request_no}`,

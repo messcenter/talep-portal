@@ -74,6 +74,12 @@ export function buildApp(deps: Deps) {
   registerAuthRoutes(app, deps, signSession);
   registerPublicRoutes(app, deps);
   registerAdminRoutes(app, deps);
+
+  app.onError((err, c) => {
+    console.error("[app] unhandled error", err);
+    return c.text("Sunucu hatası", 500);
+  });
+
   return app;
 }
 

@@ -145,5 +145,35 @@ export function makeRepo(db: Database) {
       }
       db.query("UPDATE requests SET status = ? WHERE id = ?").run(status, id);
     },
+
+    addMessageAndTransition(
+      requestId: number,
+      message: { role: "admin" | "requester"; body: string } | null,
+      newStatus: RequestStatus,
+      createdAt: string,
+    ): void {
+      const run = db.transaction(() => {
+        const current = db
+          .query<{ status: RequestStatus }, [number]>(
+            "SELECT status FROM requests WHERE id = ?",
+          )
+          .get(requestId);
+        if (!current) throw new Error(`request ${requestId} not found`);
+        if (!canTransition(current.status, newStatus)) {
+          throw new Error(`illegal transition ${current.status} -> ${newStatus}`);
+        }
+        if (message) {
+          db.query(
+            `INSERT INTO messages (request_id, author_role, body, created_at)
+             VALUES (?, ?, ?, ?)`,
+          ).run(requestId, message.role, message.body, createdAt);
+        }
+        db.query("UPDATE requests SET status = ? WHERE id = ?").run(
+          newStatus,
+          requestId,
+        );
+      });
+      run();
+    },
   };
 }

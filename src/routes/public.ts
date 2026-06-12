@@ -4,7 +4,6 @@ import type { AppEnv, Deps } from "../app";
 import { body } from "../app";
 import { newRequestSchema, replySchema } from "../domain/validation";
 import { canViewRequest, canReply } from "../domain/authz";
-import { canTransition } from "../domain/status";
 import { newRequestForm, myList, requestDetail, esc } from "../views/views";
 
 export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
@@ -69,8 +68,12 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
     if (!canReply(user, r)) return c.text("Şu an cevap veremezsiniz", 403);
     const parsed = replySchema.safeParse(await body(c));
     if (!parsed.success) return c.text("Geçersiz cevap", 400);
-    deps.repo.addMessage(r.id, "requester", parsed.data.body, deps.now());
-    if (canTransition(r.status, "answered")) deps.repo.updateStatus(r.id, "answered");
+    deps.repo.addMessageAndTransition(
+      r.id,
+      { role: "requester", body: parsed.data.body },
+      "answered",
+      deps.now(),
+    );
     for (const admin of deps.config.adminEmails) {
       await deps.mailer.send(
         admin,

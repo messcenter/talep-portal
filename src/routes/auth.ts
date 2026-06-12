@@ -29,6 +29,7 @@ export function registerAuthRoutes(
     if (!code || !state || state !== getCookie(c, "oauth_state")) {
       return c.text("Geçersiz oturum açma isteği", 400);
     }
+    deleteCookie(c, "oauth_state", { path: "/" });
     const profile = await exchangeCode({
       code,
       clientId: deps.config.googleClientId,
