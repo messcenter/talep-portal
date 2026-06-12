@@ -206,6 +206,27 @@ describe("POST /requests", () => {
     expect(repo.listAll({}).length).toBe(0);
     expect(mem.store.size).toBe(0);
   });
+
+  test("multipart upload without a valid CSRF token is rejected (403), nothing stored", async () => {
+    const fd = new FormData();
+    // NOTE: intentionally NO _csrf field (cookie has csrf=test-csrf, form omits it).
+    fd.append("department", "d");
+    fd.append("application", "ERP");
+    fd.append("request_type", "feature");
+    fd.append("priority", "high");
+    fd.append("title", "t");
+    fd.append("description", "d");
+    fd.append("expected_benefit", "f");
+    fd.append("files", new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], "x.png", { type: "image/png" }));
+    const res = await app.request("/requests", {
+      method: "POST",
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+      body: fd,
+    });
+    expect(res.status).toBe(403);
+    expect(repo.listAll({}).length).toBe(0);
+    expect(mem.store.size).toBe(0);
+  });
 });
 
 describe("reply flow", () => {
