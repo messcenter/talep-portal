@@ -267,3 +267,44 @@ describe("reply flow", () => {
     expect(atts[0]!.mime).toBe("application/pdf");
   });
 });
+
+describe("serve attachment", () => {
+  async function seedWithAttachment() {
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "f", priority: "high" },
+      "t",
+      [{ storage_key: "img1.png", original_name: "shot.png", mime: "image/png", size_bytes: 3 }],
+    );
+    mem.store.set("img1.png", new Uint8Array([1, 2, 3]));
+    return { r, att: repo.listAttachmentsByRequest(r.id)[0]! };
+  }
+
+  test("owner can fetch their attachment with correct headers", async () => {
+    const { r, att } = await seedWithAttachment();
+    const res = await app.request(`/requests/${r.id}/attachments/${att.id}`, {
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/png");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  test("stranger gets 404 (no leakage)", async () => {
+    const { r, att } = await seedWithAttachment();
+    const res = await app.request(`/requests/${r.id}/attachments/${att.id}`, {
+      headers: { Cookie: cookie("intruder@kokilmetal.com.tr", "X") },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test("missing attachment id gives 404", async () => {
+    const res = await app.request(`/requests/1/attachments/999999`, {
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+    });
+    expect(res.status).toBe(404);
+  });
+});

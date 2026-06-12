@@ -69,6 +69,26 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
     );
   });
 
+  app.get("/requests/:id/attachments/:attId", async (c) => {
+    const user = c.get("user");
+    const id = Number(c.req.param("id"));
+    const attId = Number(c.req.param("attId"));
+    if (!Number.isInteger(id) || !Number.isInteger(attId))
+      return c.text("Bulunamadı", 404);
+    const att = deps.repo.getAttachment(attId);
+    if (!att || att.request_id !== id) return c.text("Bulunamadı", 404);
+    const r = deps.repo.getRequest(att.request_id);
+    if (!r || !canViewRequest(user, r)) return c.text("Bulunamadı", 404);
+    const bytes = await deps.storage.read(att.storage_key);
+    if (!bytes) return c.text("Bulunamadı", 404);
+    const safeName = att.original_name.replace(/[\r\n"\\]/g, "_");
+    c.header("Content-Type", att.mime);
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("Content-Disposition", `inline; filename="${safeName}"`);
+    c.header("Cache-Control", "private, max-age=300");
+    return c.body(bytes);
+  });
+
   app.post("/requests/:id/reply", async (c) => {
     const user = c.get("user");
     const id = Number(c.req.param("id"));
