@@ -29,6 +29,7 @@ export function buildApp(deps: Deps) {
 
   app.use("*", async (c, next) => {
     const path = c.req.path;
+    // Trailing slash is load-bearing: "/authx/..." will NOT bypass auth.
     if (path.startsWith("/auth/")) return next();
 
     const token = getCookie(c, "session");
@@ -54,7 +55,7 @@ export function buildApp(deps: Deps) {
     let csrf = getCookie(c, "csrf");
     if (!csrf) {
       csrf = crypto.randomUUID();
-      setCookie(c, "csrf", csrf, { httpOnly: false, sameSite: "Lax", path: "/" });
+      setCookie(c, "csrf", csrf, { httpOnly: true, sameSite: "Lax", path: "/" });
     }
     c.set("csrf", csrf);
 

@@ -4,7 +4,7 @@ import type { AppEnv, Deps } from "../app";
 import { body } from "../app";
 import { messageSchema, decisionSchema } from "../domain/validation";
 import { canTransition } from "../domain/status";
-import { adminList, requestDetail } from "../views/views";
+import { adminList, requestDetail, esc } from "../views/views";
 
 function requireAdmin(c: any): boolean {
   return c.get("user")?.isAdmin === true;
@@ -21,7 +21,9 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
 
   app.post("/admin/requests/:id/message", async (c) => {
     if (!requireAdmin(c)) return c.text("Yetkisiz", 403);
-    const r = deps.repo.getRequest(Number(c.req.param("id")));
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.text("Bulunamadı", 404);
+    const r = deps.repo.getRequest(id);
     if (!r) return c.text("Bulunamadı", 404);
     const parsed = messageSchema.safeParse(await body(c));
     if (!parsed.success) return c.text("Geçersiz soru", 400);
@@ -39,7 +41,9 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
 
   app.post("/admin/requests/:id/decision", async (c) => {
     if (!requireAdmin(c)) return c.text("Yetkisiz", 403);
-    const r = deps.repo.getRequest(Number(c.req.param("id")));
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.text("Bulunamadı", 404);
+    const r = deps.repo.getRequest(id);
     if (!r) return c.text("Bulunamadı", 404);
     const parsed = decisionSchema.safeParse(await body(c));
     if (!parsed.success) return c.text("Karar için gerekçe gerekli", 400);
@@ -52,14 +56,16 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
     await deps.mailer.send(
       r.requester_email,
       `Talep ${target === "accepted" ? "kabul edildi" : "reddedildi"}: ${r.request_no}`,
-      `<p>${r.request_no} ${target === "accepted" ? "kabul edildi" : "reddedildi"}.</p>${parsed.data.reason ? `<p>${parsed.data.reason}</p>` : ""}`,
+      `<p>${r.request_no} ${target === "accepted" ? "kabul edildi" : "reddedildi"}.</p>${parsed.data.reason ? `<p>${esc(parsed.data.reason)}</p>` : ""}`,
     );
     return c.redirect(`/admin/requests/${r.id}`);
   });
 
   app.get("/admin/requests/:id", (c) => {
     if (!requireAdmin(c)) return c.text("Yetkisiz", 403);
-    const r = deps.repo.getRequest(Number(c.req.param("id")));
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.text("Bulunamadı", 404);
+    const r = deps.repo.getRequest(id);
     if (!r) return c.text("Bulunamadı", 404);
     return c.html(
       requestDetail({

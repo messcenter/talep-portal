@@ -5,7 +5,7 @@ import { body } from "../app";
 import { newRequestSchema, replySchema } from "../domain/validation";
 import { canViewRequest, canReply } from "../domain/authz";
 import { canTransition } from "../domain/status";
-import { newRequestForm, myList, requestDetail } from "../views/views";
+import { newRequestForm, myList, requestDetail, esc } from "../views/views";
 
 export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
   app.get("/", (c) => c.html(newRequestForm(c.get("user"))));
@@ -26,7 +26,7 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
       await deps.mailer.send(
         admin,
         `Yeni talep: ${r.request_no}`,
-        `<p>${r.request_no} — ${r.title}</p><p><a href="${deps.config.appBaseUrl}/admin/requests/${r.id}">İncele</a></p>`,
+        `<p>${r.request_no} — ${esc(r.title)}</p><p><a href="${deps.config.appBaseUrl}/admin/requests/${r.id}">İncele</a></p>`,
       );
     }
     await deps.mailer.send(
@@ -44,7 +44,9 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
 
   app.get("/requests/:id", (c) => {
     const user = c.get("user");
-    const r = deps.repo.getRequest(Number(c.req.param("id")));
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.text("Bulunamadı", 404);
+    const r = deps.repo.getRequest(id);
     if (!r || !canViewRequest(user, r)) return c.text("Bulunamadı", 404);
     return c.html(
       requestDetail({
@@ -60,7 +62,9 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
 
   app.post("/requests/:id/reply", async (c) => {
     const user = c.get("user");
-    const r = deps.repo.getRequest(Number(c.req.param("id")));
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.text("Bulunamadı", 404);
+    const r = deps.repo.getRequest(id);
     if (!r || !canViewRequest(user, r)) return c.text("Bulunamadı", 404);
     if (!canReply(user, r)) return c.text("Şu an cevap veremezsiniz", 403);
     const parsed = replySchema.safeParse(await body(c));

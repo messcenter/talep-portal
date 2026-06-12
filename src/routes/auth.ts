@@ -53,6 +53,7 @@ export function registerAuthRoutes(
 
   app.post("/logout", (c) => {
     deleteCookie(c, "session", { path: "/" });
+    deleteCookie(c, "csrf", { path: "/" });
     return c.redirect("/auth/google");
   });
 }
