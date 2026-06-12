@@ -1,11 +1,13 @@
 // src/client/pages/NewRequest.tsx
 // "Yeni Talep Formu" — creates a new ERP/software request.
 // Field names exactly match newRequestSchema in src/domain/validation.ts.
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiSend } from "../api";
+import { apiGet, apiSend } from "../api";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+
+type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
 
 // ---- Shared label component ----
 
@@ -46,6 +48,21 @@ export function NewRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Managed department/module lists (DM5). Controlled selects.
+  const [depts, setDepts] = useState<Dept[] | null>(null);
+  const [dept, setDept] = useState("");
+  const [moduleName, setModuleName] = useState("");
+
+  useEffect(() => {
+    apiGet<Dept[]>("/api/departments")
+      .then(setDepts)
+      .catch((err) =>
+        setErrorMsg(err instanceof Error ? err.message : "Departmanlar yüklenemedi."),
+      );
+  }, []);
+
+  const selectedDept = depts?.find((d) => d.name === dept);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!formRef.current) return;
@@ -54,6 +71,10 @@ export function NewRequest() {
     setErrorMsg(null);
 
     const fd = new FormData(formRef.current);
+    // Department/module are controlled state (not uncontrolled DOM inputs);
+    // set them explicitly so the submitted field names/values are guaranteed.
+    fd.set("department", dept);
+    fd.set("module_area", moduleName);
 
     try {
       const result = await apiSend<{ id: number }>("/api/requests", "POST", fd);
@@ -90,6 +111,19 @@ export function NewRequest() {
           </div>
         )}
 
+        {/* Still loading departments */}
+        {!depts && !errorMsg && (
+          <p className="text-on-surface-variant">Yükleniyor…</p>
+        )}
+
+        {/* No managed departments → cannot submit a valid request */}
+        {depts && depts.length === 0 && (
+          <div className="bg-surface-tonal border border-border-subtle rounded p-4 text-sm text-on-surface">
+            Henüz departman tanımlanmamış. Lütfen yöneticiye başvurun.
+          </div>
+        )}
+
+        {depts && depts.length > 0 && (
         <form ref={formRef} onSubmit={handleSubmit} noValidate>
           {/* Row 1: Department + Application (two-column on sm+) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -97,16 +131,25 @@ export function NewRequest() {
               <FieldLabel htmlFor="department" required>
                 Departman
               </FieldLabel>
-              <input
+              <select
                 id="department"
                 name="department"
-                type="text"
                 required
-                maxLength={120}
-                placeholder="ör. Üretim Planlama"
+                value={dept}
+                onChange={(e) => {
+                  setDept(e.target.value);
+                  setModuleName("");
+                }}
                 className={inputClass}
                 disabled={submitting}
-              />
+              >
+                <option value="">Seçiniz…</option>
+                {depts.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <FieldLabel htmlFor="application" required>
@@ -126,19 +169,27 @@ export function NewRequest() {
             </div>
           </div>
 
-          {/* Row 2: Module Area (optional, full width) */}
-          <div className="mb-4">
-            <FieldLabel htmlFor="module_area">Modül / Alan</FieldLabel>
-            <input
-              id="module_area"
-              name="module_area"
-              type="text"
-              maxLength={120}
-              placeholder="ör. Satın Alma, Stok Yönetimi"
-              className={inputClass}
-              disabled={submitting}
-            />
-          </div>
+          {/* Row 2: Module Area (optional, scoped to selected department) */}
+          {selectedDept && selectedDept.modules.length > 0 && (
+            <div className="mb-4">
+              <FieldLabel htmlFor="module_area">Modül / Alan</FieldLabel>
+              <select
+                id="module_area"
+                name="module_area"
+                value={moduleName}
+                onChange={(e) => setModuleName(e.target.value)}
+                className={inputClass}
+                disabled={submitting}
+              >
+                <option value="">Seçiniz…</option>
+                {selectedDept.modules.map((m) => (
+                  <option key={m.id} value={m.name}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Row 3: Request Type + Priority (two-column on sm+) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -259,6 +310,7 @@ export function NewRequest() {
             </Button>
           </div>
         </form>
+        )}
       </Card>
     </main>
   );
