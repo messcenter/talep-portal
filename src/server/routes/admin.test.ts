@@ -241,6 +241,25 @@ describe("POST /api/admin/requests/:id/message", () => {
     }));
     expect(sent.some((m) => m.to === "a@kokilmetal.com.tr")).toBe(true);
   });
+
+  test("admin question can carry an attachment: stored and linked to message", async () => {
+    const r = seedRequest();
+    const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const fd = new FormData();
+    fd.set("body", "şu ekrana bakın");
+    fd.set("files", new File([PNG_BYTES], "q.png", { type: "image/png" }));
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/message`, {
+      method: "POST",
+      body: fd,
+      headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("clarifying");
+    const atts = repo.listAttachmentsByRequest(r.id);
+    expect(atts.length).toBe(1);
+    expect(atts[0]!.mime).toBe("image/png");
+    expect(atts[0]!.message_id).not.toBeNull();
+  });
 });
 
 // ─── POST /api/admin/requests/:id/decision ───────────────────────────────────

@@ -224,6 +224,22 @@ describe("POST /api/requests", () => {
     expect(atts[0]!.mime).toBe("image/png");
     expect(memStore.get(atts[0]!.storage_key)).toEqual(PNG_BYTES);
   });
+
+  test("spoofed file type (MZ/PE header declared as image/png) → 400, nothing stored, request not persisted", async () => {
+    // MZ header — a Windows PE executable disguised as a PNG.
+    const MZ_BYTES = new Uint8Array([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+    const fd = validFormData();
+    fd.set("files", new File([MZ_BYTES], "exploit.png", { type: "image/png" }));
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST",
+      body: fd,
+      headers: { cookie: authedCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(400);
+    // Nothing should be persisted — no request row, no bytes in storage.
+    expect(repo.listByEmail("a@kokilmetal.com.tr").length).toBe(0);
+    expect(memStore.size).toBe(0);
+  });
 });
 
 // ─── GET /api/requests/:id ────────────────────────────────────────────────────

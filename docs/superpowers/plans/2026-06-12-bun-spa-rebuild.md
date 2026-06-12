@@ -103,6 +103,7 @@ Run test → PASS.
 Port the exact logic from `src/routes/public.ts` (read it), returning JSON instead of HTML/redirect:
 - `GET /api/my` → `repo.listByEmail(user.email)` as JSON array.
 - `POST /api/requests` (multipart) → `newRequestSchema` parse; `processUploads`; `repo.createRequest`; send admin+requester mails (best-effort); `201 {id}`. On validation fail → `400 {errors}`. CSRF enforced by handler.
+- **Body-size enforcement (real cap):** the handler's Content-Length check is only a fast-path reject (bypassable via chunked/lying headers). In the multipart handlers, after reading files, enforce real total size against `MAX_UPLOAD_BYTES` and reject 413 if exceeded. (Combined with A5's `Bun.serve({ maxRequestBodySize })`.)
 - `GET /api/requests/:id` → id NaN→404; `getRequest`; `canViewRequest` else 404; return `{request, messages, attachments}`.
 - `POST /api/requests/:id/reply` (multipart) → canView else 404; canReply else 403; `replySchema`; uploads; `addMessageAndTransition(...,"answered",...)`; mails; `204`.
 - [ ] Tests (TDD per endpoint): create→201, my returns own only, detail IDOR→404, reply happy + reply-when-terminal→403/409, **multipart POST without CSRF header → 403** (port the existing security test).
@@ -120,7 +121,7 @@ Port the exact logic from `src/routes/public.ts` (read it), returning JSON inste
 ## Task A4: Auth routes + attachments binary
 **Files:** `src/server/routes/auth.ts`, `src/server/routes/attachments.ts`; wire. Port from `src/routes/auth.ts` + the attachment handler in `src/routes/public.ts`:
 - `GET /auth/google` → set `oauth_state` cookie, redirect to `buildAuthUrl`.
-- `GET /auth/google/callback` → validate state vs cookie (else 400); `exchangeCode`; `verifyDomain` else 403; `signSession`; set `session` cookie (httpOnly) + a fresh non-httpOnly `csrf` cookie; redirect `/my`.
+- `GET /auth/google/callback` → validate state vs cookie (else 400); `exchangeCode`; `verifyDomain` else 403; `signSession`; set `session` cookie (httpOnly) + a fresh non-httpOnly `csrf` cookie; redirect `/my`. **Both cookies get `secure: config.appBaseUrl.startsWith("https")`.** Minting csrf at login is the canonical fix for the bootstrap catch-22 — the client always has a csrf cookie before its first mutating request.
 - `POST /logout` → expire `session` + `csrf`; redirect `/auth/google`. CSRF-exempt.
 - `GET /requests/:id/attachments/:attId` → NaN→404; attachment+request ownership/authz else 404; `storage.read` else 404; headers: nosniff, CSP sandbox, allowlist→inline else attachment, filename sanitized, `Cache-Control: private, max-age=300`; return bytes.
 - [ ] Tests (TDD): callback domain-reject→403; **attachment nosniff + CSP sandbox + non-allowlisted forced attachment** (port existing); IDOR attachment→404; logout clears cookies.
@@ -145,7 +146,7 @@ const mailer = makeMailer(transportFromConfig(config), config.mailFrom);
 const storage = makeFsStorage(config.uploadDir);
 const handler = makeHandler({ config, repo, mailer, storage, now: () => new Date().toISOString() });
 
-Bun.serve({ port: config.port, fetch: handler });
+Bun.serve({ port: config.port, maxRequestBodySize: 110 * 1024 * 1024, fetch: handler });
 console.log(`Talep Portalı çalışıyor: ${config.appBaseUrl} (port ${config.port})`);
 ```
 (SPA `routes`/`index.html` eklenir Alt-proje B'de.)
