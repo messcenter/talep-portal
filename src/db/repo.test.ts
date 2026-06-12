@@ -27,6 +27,11 @@ function seedSchema(db: Database): Database {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       request_id INTEGER NOT NULL REFERENCES requests(id),
       author_role TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE attachments (id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      message_id INTEGER REFERENCES messages(id),
+      storage_key TEXT NOT NULL, original_name TEXT NOT NULL,
+      mime TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL);
   `);
   return db;
 }
@@ -117,5 +122,40 @@ describe("addMessageAndTransition (atomic)", () => {
     ).toThrow();
     expect(repo.listMessages(r.id).length).toBe(0);
     expect(repo.getRequest(r.id)?.status).toBe("accepted");
+  });
+});
+
+describe("attachments", () => {
+  const sample = baseInput;
+  const att = (over = {}) => ({
+    storage_key: "k1.png", original_name: "shot.png",
+    mime: "image/png", size_bytes: 123, ...over,
+  });
+
+  test("createRequest stores request-level attachments (message_id null)", () => {
+    const r = repo.createRequest(sample, "t", [att(), att({ storage_key: "k2.pdf", mime: "application/pdf" })]);
+    const list = repo.listAttachmentsByRequest(r.id);
+    expect(list.length).toBe(2);
+    expect(list[0]!.request_id).toBe(r.id);
+    expect(list[0]!.message_id).toBeNull();
+  });
+
+  test("addMessageAndTransition attaches files to the new message", () => {
+    const r = repo.createRequest(sample, "t");
+    repo.updateStatus(r.id, "clarifying");
+    repo.addMessageAndTransition(
+      r.id, { role: "requester", body: "cevap" }, "answered", "t",
+      [att({ storage_key: "k3.png" })],
+    );
+    const list = repo.listAttachmentsByRequest(r.id);
+    expect(list.length).toBe(1);
+    expect(list[0]!.message_id).not.toBeNull();
+  });
+
+  test("getAttachment returns row or null", () => {
+    const r = repo.createRequest(sample, "t", [att()]);
+    const id = repo.listAttachmentsByRequest(r.id)[0]!.id;
+    expect(repo.getAttachment(id)?.storage_key).toBe("k1.png");
+    expect(repo.getAttachment(999999)).toBeNull();
   });
 });

@@ -38,5 +38,18 @@ function migrate(db: Database): void {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_messages_request ON messages(request_id);
+
+    CREATE TABLE IF NOT EXISTS attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      message_id INTEGER REFERENCES messages(id),
+      storage_key TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mime TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_attachments_request ON attachments(request_id);
+    CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
   `);
 }

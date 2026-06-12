@@ -29,6 +29,20 @@ export type MessageRow = {
   created_at: string;
 };
 
+export type AttachmentInput = {
+  storage_key: string;
+  original_name: string;
+  mime: string;
+  size_bytes: number;
+};
+
+export type AttachmentRow = AttachmentInput & {
+  id: number;
+  request_id: number;
+  message_id: number | null;
+  created_at: string;
+};
+
 export type CreateRequestInput = NewRequestInput & {
   requester_name: string;
   requester_email: string;
@@ -37,8 +51,27 @@ export type CreateRequestInput = NewRequestInput & {
 export type Repo = ReturnType<typeof makeRepo>;
 
 export function makeRepo(db: Database) {
+  const insertAttachments = (
+    requestId: number,
+    messageId: number | null,
+    attachments: AttachmentInput[],
+    createdAt: string,
+  ) => {
+    for (const a of attachments) {
+      db.query(
+        `INSERT INTO attachments
+         (request_id, message_id, storage_key, original_name, mime, size_bytes, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(requestId, messageId, a.storage_key, a.original_name, a.mime, a.size_bytes, createdAt);
+    }
+  };
+
   return {
-    createRequest(input: CreateRequestInput, createdAt: string): RequestRow {
+    createRequest(
+      input: CreateRequestInput,
+      createdAt: string,
+      attachments: AttachmentInput[] = [],
+    ): RequestRow {
       const tx = db.transaction(() => {
         const row = db
           .query<{ c: number }, []>("SELECT COUNT(*) AS c FROM requests")
@@ -68,6 +101,7 @@ export function makeRepo(db: Database) {
             $benefit: input.expected_benefit,
             $prio: input.priority,
           });
+        insertAttachments(inserted!.id, null, attachments, createdAt);
         return inserted!;
       });
       return tx();
@@ -133,6 +167,22 @@ export function makeRepo(db: Database) {
         .all(requestId);
     },
 
+    listAttachmentsByRequest(requestId: number): AttachmentRow[] {
+      return db
+        .query<AttachmentRow, [number]>(
+          "SELECT * FROM attachments WHERE request_id = ? ORDER BY id ASC",
+        )
+        .all(requestId);
+    },
+
+    getAttachment(id: number): AttachmentRow | null {
+      return (
+        db
+          .query<AttachmentRow, [number]>("SELECT * FROM attachments WHERE id = ?")
+          .get(id) ?? null
+      );
+    },
+
     updateStatus(id: number, status: RequestStatus): void {
       const current = db
         .query<{ status: RequestStatus }, [number]>(
@@ -151,6 +201,7 @@ export function makeRepo(db: Database) {
       message: { role: "admin" | "requester"; body: string } | null,
       newStatus: RequestStatus,
       createdAt: string,
+      attachments: AttachmentInput[] = [],
     ): void {
       const run = db.transaction(() => {
         const current = db
@@ -162,16 +213,19 @@ export function makeRepo(db: Database) {
         if (!canTransition(current.status, newStatus)) {
           throw new Error(`illegal transition ${current.status} -> ${newStatus}`);
         }
+        let messageId: number | null = null;
         if (message) {
-          db.query(
+          const res = db.query(
             `INSERT INTO messages (request_id, author_role, body, created_at)
              VALUES (?, ?, ?, ?)`,
           ).run(requestId, message.role, message.body, createdAt);
+          messageId = Number(res.lastInsertRowid);
         }
         db.query("UPDATE requests SET status = ? WHERE id = ?").run(
           newStatus,
           requestId,
         );
+        insertAttachments(requestId, messageId, attachments, createdAt);
       });
       run();
     },
