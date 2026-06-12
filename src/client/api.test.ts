@@ -89,6 +89,33 @@ describe("apiSend", () => {
     expect(headers["X-CSRF-Token"]).toBe("tok123");
   });
 
+  it("sends Content-Type and CSRF header when contentType is provided", async () => {
+    stubGlobals("csrf=tokjson");
+    const fetchSpy = mock(() => Promise.resolve(makeResponse(201, { id: 1 })));
+    globalThis.fetch = fetchSpy as any;
+
+    const { apiSend } = await import("./api");
+    await apiSend("/api/admin/departments", "POST", JSON.stringify({ name: "X" }), "application/json");
+
+    const [, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const headers = (opts as any).headers as Record<string, string>;
+    expect(headers["Content-Type"]).toBe("application/json");
+    expect(headers["X-CSRF-Token"]).toBe("tokjson");
+  });
+
+  it("omits Content-Type when contentType is not provided (FormData boundary)", async () => {
+    stubGlobals("csrf=tok");
+    const fetchSpy = mock(() => Promise.resolve(makeResponse(204)));
+    globalThis.fetch = fetchSpy as any;
+
+    const { apiSend } = await import("./api");
+    await apiSend("/api/requests", "POST", new FormData());
+
+    const [, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const headers = (opts as any).headers as Record<string, string>;
+    expect(headers["Content-Type"]).toBeUndefined();
+  });
+
   it("returns null on 204", async () => {
     stubGlobals();
     globalThis.fetch = mock(() => Promise.resolve(makeResponse(204))) as any;

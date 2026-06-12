@@ -16,6 +16,7 @@ import { NewRequest } from "./pages/NewRequest";
 import { MyList } from "./pages/MyList";
 import { RequestDetail } from "./pages/RequestDetail";
 import { Admin } from "./pages/Admin";
+import { Definitions } from "./pages/Definitions";
 
 // ---- Spinner ----
 
@@ -95,6 +96,11 @@ function AppLayout() {
                   Yönetim
                 </NavLink>
               )}
+              {user.isAdmin && (
+                <NavLink to="/admin/tanimlar" className={linkClass}>
+                  Tanımlar
+                </NavLink>
+              )}
             </nav>
 
             {/* User info + logout */}
@@ -137,6 +143,7 @@ export function App() {
           <Route path="/my" element={<MyList />} />
           <Route path="/requests/:id" element={<RequestDetail />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/tanimlar" element={<Definitions />} />
         </Route>
 
         {/* Fallback: redirect unknown paths to home */}

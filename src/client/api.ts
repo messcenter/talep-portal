@@ -41,12 +41,17 @@ export async function apiSend<T = unknown>(
   path: string,
   method: string,
   body?: BodyInit,
+  contentType?: string,
 ): Promise<T | null> {
   const csrf = readCookie("csrf") ?? "";
+  const headers: Record<string, string> = { "X-CSRF-Token": csrf };
+  // Only set Content-Type when given (e.g. JSON). For FormData callers we omit
+  // it so the browser supplies the multipart boundary.
+  if (contentType) headers["Content-Type"] = contentType;
   const res = await fetch(path, {
     method,
     credentials: "same-origin",
-    headers: { "X-CSRF-Token": csrf },
+    headers,
     body,
   });
   if (res.status === 401) return handle401();
