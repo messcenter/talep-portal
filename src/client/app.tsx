@@ -13,24 +13,8 @@ import { apiGet } from "./api";
 import { UserContext, type User } from "./auth";
 import { Login } from "./pages/Login";
 import { NewRequest } from "./pages/NewRequest";
-
-// ---- Placeholder pages (replaced in B3 / B4) ----
-
-function MyRequestsPage() {
-  return (
-    <main className="max-w-4xl mx-auto px-4 py-6">
-      <div className="text-on-surface-variant">Taleplerim</div>
-    </main>
-  );
-}
-
-function RequestDetailPage() {
-  return (
-    <main className="max-w-4xl mx-auto px-4 py-6">
-      <div className="text-on-surface-variant">Talep Detayı</div>
-    </main>
-  );
-}
+import { MyList } from "./pages/MyList";
+import { RequestDetail } from "./pages/RequestDetail";
 
 function AdminPage() {
   return (
@@ -157,8 +141,8 @@ export function App() {
         {/* Authenticated shell — all children require a valid session */}
         <Route element={<AppLayout />}>
           <Route index element={<NewRequest />} />
-          <Route path="/my" element={<MyRequestsPage />} />
-          <Route path="/requests/:id" element={<RequestDetailPage />} />
+          <Route path="/my" element={<MyList />} />
+          <Route path="/requests/:id" element={<RequestDetail />} />
           <Route path="/admin" element={<AdminPage />} />
         </Route>
 
