@@ -128,7 +128,9 @@ Geçiş kuralları (saf mantıkta, test edilir):
 
 ## 7. E-posta bildirimleri
 
-nodemailer + Google Workspace SMTP relay (veya uygulama-şifresi).
+nodemailer + Zoho Mail SMTP. (Kimlik/giriş Google Workspace; giden mail Zoho —
+ikisi bağımsız.) Zoho: `smtp.zoho.com` (DC'ye göre `.eu` vb.), 465/SSL veya
+587/STARTTLS, auth = tam e-posta + uygulama-şifresi.
 
 | Olay | Kime | İçerik |
 |---|---|---|
@@ -181,10 +183,12 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_HOSTED_DOMAIN=kokilmetal.com.tr
 ADMIN_EMAILS=g.kalipcilar@...,...
-SMTP_HOST=smtp-relay.gmail.com
-SMTP_PORT=587
+SMTP_HOST=smtp.zoho.com
+SMTP_PORT=465
+SMTP_SECURE=true
 SMTP_USER=
 SMTP_PASS=
+MAIL_FROM=
 APP_BASE_URL=
 ```
 
