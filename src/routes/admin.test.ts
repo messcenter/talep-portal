@@ -5,6 +5,19 @@ import { makeMailer } from "../mail/mailer";
 import { signSession } from "../auth/session";
 import { buildApp } from "../app";
 import { loadConfig } from "../config";
+import type { Storage } from "../storage/storage";
+
+function makeMemStorage(): { store: Map<string, Uint8Array>; storage: Storage } {
+  const store = new Map<string, Uint8Array>();
+  return {
+    store,
+    storage: {
+      async put(k, b) { store.set(k, b); },
+      async read(k) { return store.get(k) ?? null; },
+      async remove(k) { store.delete(k); },
+    },
+  };
+}
 
 const cfg = loadConfig({
   APP_BASE_URL: "http://localhost:3000",
@@ -28,7 +41,12 @@ function schema(db: Database): Database {
       status TEXT NOT NULL DEFAULT 'new');
     CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT,
       request_id INTEGER NOT NULL REFERENCES requests(id),
-      author_role TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);`);
+      author_role TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE attachments (id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      message_id INTEGER REFERENCES messages(id),
+      storage_key TEXT NOT NULL, original_name TEXT NOT NULL,
+      mime TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL);`);
   return db;
 }
 function adminCookie() {
@@ -41,6 +59,7 @@ function userCookie() {
 let repo: Repo;
 let sent: any[];
 let app: ReturnType<typeof buildApp>;
+let mem: ReturnType<typeof makeMemStorage>;
 
 const sample = {
   requester_name: "A", requester_email: "a@kokilmetal.com.tr",
@@ -52,9 +71,11 @@ const sample = {
 beforeEach(() => {
   repo = makeRepo(schema(new Database(":memory:")));
   sent = [];
+  mem = makeMemStorage();
   app = buildApp({
     config: cfg, repo,
     mailer: makeMailer({ async sendMail(m: any) { sent.push(m); return {}; } }, cfg.mailFrom),
+    storage: mem.storage,
     now: () => "2026-06-12T00:00:00Z",
   });
 });
