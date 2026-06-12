@@ -6,7 +6,7 @@ import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
 import { parseForm } from "./requests";
-import { esc } from "../../views/views";
+import { esc } from "../escape";
 
 /**
  * Dispatcher for all /api/admin/* routes.

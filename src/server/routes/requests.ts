@@ -5,7 +5,7 @@ import { newRequestSchema, replySchema } from "../../domain/validation";
 import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
-import { esc } from "../../views/views";
+import { esc } from "../escape";
 
 /** Parse a Bun Request's multipart body into a plain Record, normalizing
  * multiple values for the same key into an array (used for `files`). */
