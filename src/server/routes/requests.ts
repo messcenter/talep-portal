@@ -48,6 +48,14 @@ export async function handleRequests(
       const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
       return json({ errors }, 400, extraHeaders);
     }
+    // Strictness: department must be a managed one; module (if given) must belong to it.
+    const dept = deps.repo.getDepartmentByName(parsed.data.department);
+    if (!dept) {
+      return json({ errors: ["Geçersiz departman"] }, 400, extraHeaders);
+    }
+    if (parsed.data.module_area && !deps.repo.listModuleNames(dept.id).includes(parsed.data.module_area)) {
+      return json({ errors: ["Geçersiz modül"] }, 400, extraHeaders);
+    }
     const up = await processUploads(collectFiles(form), deps.storage);
     if (!up.ok) return json({ errors: up.errors }, 400, extraHeaders);
     let r;

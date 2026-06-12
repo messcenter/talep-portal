@@ -19,7 +19,20 @@ const cfg = loadConfig({
 });
 
 function schema(db: Database): Database {
+  db.exec(`PRAGMA foreign_keys = ON;`);
   db.exec(`
+    CREATE TABLE departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE modules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(department_id, name)
+    );
     CREATE TABLE requests (id INTEGER PRIMARY KEY AUTOINCREMENT,
       request_no TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL,
       requester_name TEXT NOT NULL, requester_email TEXT NOT NULL,
@@ -72,7 +85,17 @@ function authedCookie(email = "a@kokilmetal.com.tr", name = "A", csrf = "tok") {
   return `session=${sessionToken}; csrf=${csrf}`;
 }
 
-/** Default FormData with all required newRequestSchema fields. */
+/** Seed a department (and optionally modules) into repo for POST /api/requests tests. */
+function seedDept(name: string, moduleNames: string[] = []) {
+  const dept = repo.createDepartment(name, "2026-01-01T00:00:00.000Z");
+  for (const m of moduleNames) {
+    repo.createModule(dept.id, m, "2026-01-01T00:00:00.000Z");
+  }
+  return dept;
+}
+
+/** Default FormData with all required newRequestSchema fields.
+ * Uses department "IT" — callers must seed that department before submitting. */
 function validFormData(): FormData {
   const fd = new FormData();
   fd.set("department", "IT");
@@ -140,6 +163,7 @@ describe("GET /api/my", () => {
 
 describe("POST /api/requests", () => {
   test("happy path: 201 with {id}, request persisted, mails sent", async () => {
+    seedDept("IT");
     const fd = validFormData();
     const res = await handler(new Request("http://x/api/requests", {
       method: "POST",
@@ -177,6 +201,7 @@ describe("POST /api/requests", () => {
 
   test("multipart POST WITHOUT X-CSRF-Token → 403, request NOT persisted", async () => {
     // No "x-csrf-token" header; cookie has csrf=tok but header is absent.
+    seedDept("IT");
     const fd = validFormData();
     const res = await handler(new Request("http://x/api/requests", {
       method: "POST",
@@ -210,6 +235,7 @@ describe("POST /api/requests", () => {
   const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
 
   test("file upload: attachment row persisted and bytes stored", async () => {
+    seedDept("IT");
     const fd = validFormData();
     fd.set("files", new File([PNG_BYTES], "shot.png", { type: "image/png" }));
     const res = await handler(new Request("http://x/api/requests", {
@@ -228,6 +254,7 @@ describe("POST /api/requests", () => {
   test("spoofed file type (MZ/PE header declared as image/png) → 400, nothing stored, request not persisted", async () => {
     // MZ header — a Windows PE executable disguised as a PNG.
     const MZ_BYTES = new Uint8Array([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+    seedDept("IT");
     const fd = validFormData();
     fd.set("files", new File([MZ_BYTES], "exploit.png", { type: "image/png" }));
     const res = await handler(new Request("http://x/api/requests", {
@@ -239,6 +266,89 @@ describe("POST /api/requests", () => {
     // Nothing should be persisted — no request row, no bytes in storage.
     expect(repo.listByEmail("a@kokilmetal.com.tr").length).toBe(0);
     expect(memStore.size).toBe(0);
+  });
+
+  // ── DM3: department/module strictness ────────────────────────────────────────
+
+  test("unknown department → 400, request NOT persisted", async () => {
+    // Do NOT seed any department — "IT" is not in the managed list.
+    const fd = validFormData(); // uses department="IT"
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST",
+      body: fd,
+      headers: { cookie: authedCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(400);
+    const body = await res.json() as { errors: string[] };
+    expect(body.errors).toContain("Geçersiz departman");
+    expect(repo.listByEmail("a@kokilmetal.com.tr").length).toBe(0);
+  });
+
+  test("module not belonging to the chosen department → 400, request NOT persisted", async () => {
+    // Seed two departments, each with their own module.
+    seedDept("Muhasebe", ["Finans"]);
+    seedDept("Üretim", ["Stok"]);
+    // Submit for "Muhasebe" but with module_area "Stok" (belongs to "Üretim").
+    const fd = new FormData();
+    fd.set("department", "Muhasebe");
+    fd.set("application", "ERP");
+    fd.set("module_area", "Stok");
+    fd.set("request_type", "feature");
+    fd.set("title", "T");
+    fd.set("description", "D");
+    fd.set("expected_benefit", "B");
+    fd.set("priority", "high");
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST",
+      body: fd,
+      headers: { cookie: authedCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(400);
+    const body = await res.json() as { errors: string[] };
+    expect(body.errors).toContain("Geçersiz modül");
+    expect(repo.listByEmail("a@kokilmetal.com.tr").length).toBe(0);
+  });
+
+  test("valid department + valid module → 201", async () => {
+    seedDept("Muhasebe", ["Finans"]);
+    const fd = new FormData();
+    fd.set("department", "Muhasebe");
+    fd.set("application", "ERP");
+    fd.set("module_area", "Finans");
+    fd.set("request_type", "feature");
+    fd.set("title", "T");
+    fd.set("description", "D");
+    fd.set("expected_benefit", "B");
+    fd.set("priority", "high");
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST",
+      body: fd,
+      headers: { cookie: authedCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(201);
+    const { id } = await res.json() as { id: number };
+    expect(repo.getRequest(id)?.module_area).toBe("Finans");
+  });
+
+  test("valid department + empty module_area → 201", async () => {
+    seedDept("Muhasebe", ["Finans"]);
+    const fd = new FormData();
+    fd.set("department", "Muhasebe");
+    fd.set("application", "ERP");
+    fd.set("module_area", "");
+    fd.set("request_type", "feature");
+    fd.set("title", "T");
+    fd.set("description", "D");
+    fd.set("expected_benefit", "B");
+    fd.set("priority", "high");
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST",
+      body: fd,
+      headers: { cookie: authedCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(201);
+    const { id } = await res.json() as { id: number };
+    expect(repo.getRequest(id)?.module_area).toBe("");
   });
 });
 
