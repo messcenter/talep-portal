@@ -16,7 +16,7 @@ describe("buildAuthUrl", () => {
     expect(u.searchParams.get("client_id")).toBe("cid");
     expect(u.searchParams.get("hd")).toBe("kokilmetal.com.tr");
     expect(u.searchParams.get("state")).toBe("abc");
-    expect(u.searchParams.get("scope")).toContain("email");
+    expect(u.searchParams.get("scope")).toBe("openid email profile");
   });
 });
 

@@ -49,7 +49,10 @@ export async function exchangeCode(opts: {
       grant_type: "authorization_code",
     }),
   });
-  if (!res.ok) throw new Error(`token exchange failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`token exchange failed: ${res.status} ${body}`);
+  }
   const tokens = (await res.json()) as { id_token: string };
   const payload = decodeJwtPayload(tokens.id_token);
   return {
