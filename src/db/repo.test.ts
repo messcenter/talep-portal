@@ -2,7 +2,7 @@
 import { expect, test, describe, beforeEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { openDb } from "./db";
-import { makeRepo, type Repo } from "./repo";
+import { makeRepo, type Repo, type AttachmentInput } from "./repo";
 
 let repo: Repo;
 
@@ -127,7 +127,7 @@ describe("addMessageAndTransition (atomic)", () => {
 
 describe("attachments", () => {
   const sample = baseInput;
-  const att = (over = {}) => ({
+  const att = (over: Partial<AttachmentInput> = {}) => ({
     storage_key: "k1.png", original_name: "shot.png",
     mime: "image/png", size_bytes: 123, ...over,
   });
@@ -149,7 +149,7 @@ describe("attachments", () => {
     );
     const list = repo.listAttachmentsByRequest(r.id);
     expect(list.length).toBe(1);
-    expect(list[0]!.message_id).not.toBeNull();
+    expect(list[0]!.message_id).toBe(repo.listMessages(r.id)[0]!.id);
   });
 
   test("getAttachment returns row or null", () => {
