@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build:css": "bunx tailwindcss -i src/styles/app.css -o public/app.css --minify",
-    "build:client": "bun build src/client/main.tsx --outfile public/client.js --target browser --format esm",
+    "build:client": "bun build src/client/main.tsx --outfile public/client.js --target browser --format esm --minify",
     "build:html": "cp src/client/index.html public/index.html",
     "build": "bun run build:css && bun run build:client && bun run build:html",
     "dev:css": "bunx tailwindcss -i src/styles/app.css -o public/app.css --watch",

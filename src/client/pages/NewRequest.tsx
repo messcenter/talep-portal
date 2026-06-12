@@ -248,7 +248,7 @@ export function NewRequest() {
               disabled={submitting}
             />
             <p className="text-xs text-on-surface-variant mt-1">
-              PNG, JPEG, WebP, GIF veya PDF · En fazla birden fazla dosya seçilebilir
+              PNG, JPEG, WebP, GIF veya PDF · Birden fazla dosya seçilebilir
             </p>
           </div>
 

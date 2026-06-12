@@ -16,8 +16,9 @@ yerini alır.
 
 ## 1. Stack & Çalıştırma
 
-- **Bun + Hono + SQLite (`bun:sqlite`)**, sunucu-tarafı render HTML (Tailwind CDN),
-  nodemailer (Zoho SMTP), Zod. Frontend build adımı yok.
+- **Bun + `Bun.serve` (framework yok) + SQLite (`bun:sqlite`) JSON API**; istemci
+  tarafı **React SPA** (React 19 + shadcn/ui + Tailwind, `bun build` ile bundle'lanır),
+  nodemailer (Zoho SMTP), Zod.
 - Tek process, tek `data.db` dosyası + `uploads/` ek klasörü. **Yedek = `data.db`
   dosyasını ve `uploads/` klasörünü birlikte kopyala.**
 - Giriş: Google Workspace OAuth, `hd=kokilmetal.com.tr` ile kısıtlı.
@@ -25,8 +26,9 @@ yerini alır.
 ```bash
 bun install
 cp .env.example .env   # değerleri doldur
-bun run dev            # geliştirme (--watch)
-bun run start          # üretim
+bun run build          # istemci bundle + Tailwind CSS → public/
+bun run dev            # geliştirme (hot reload)
+bun run start          # üretim (build + serve)
 bun test               # tüm testler
 ```
 
@@ -39,12 +41,13 @@ bun test               # tüm testler
 | `src/auth/` | session (HMAC) + Google OAuth yardımcıları | — |
 | `src/mail/` | best-effort mailer (hata akışı bloklamaz) | — |
 | `src/storage/` | dosya sistemi ek I/O (put/read/remove) | `Deps` ile enjekte; domain'e sızma |
-| `src/views/` | saf string HTML render | I/O yok |
-| `src/routes/` | ince adapter: doğrula → domain'e dispatch → repo/mail | iş kuralı gömme; domain'e delege et |
-| `src/app.ts` | Hono fabrikası + auth/CSRF middleware + DI (`Deps`) | — |
+| `src/server/` | **Bun.serve HTTP katmanı**: `handler.ts` (saf `(Request)→Response` router + DI `Deps`), `guards.ts` (session/CSRF), `cookies.ts`, `context.ts`, `escape.ts`, `uploads.ts`, `routes/{requests,admin,auth,attachments}.ts` (JSON/binary handler'lar) | ince adapter; iş kuralını domain'e delege et |
+| `src/client/` | **istemci React SPA**: `index.html`, `main.tsx`, `app.tsx` (react-router), `api.ts` (fetch + CSRF header + 401 redirect), `pages/*`, `components/*`, `auth.tsx`, `labels.ts` | I/O yok — yalnız `api.ts` server'a fetch eder |
+| `src/components/ui/` | shadcn primitive'leri (Button/Card/Badge/Dialog) | — |
+| `src/index.ts` | `Bun.serve({ routes, fetch: makeHandler(deps) })` + DI wiring | — |
 
 Bağımlılıklar `Deps` ile **dışarıdan enjekte edilir** (config, repo, mailer, storage, `now`)
-— bu testte mock geçmeyi sağlar; bunu koru.
+— `makeHandler(deps)` testte mock geçmeyi sağlar; bunu koru.
 
 ## 3. Durum Makinesi (SSoT: `src/domain/status.ts`)
 
@@ -66,35 +69,40 @@ Mesaj+durum değişimi **atomiktir** (`addMessageAndTransition`, tek transaction
 
 ## 4. Güvenlik Sözleşmesi
 
-- **Auth gate:** `/auth/*` dışındaki tüm route'lar geçerli session ister
-  (`app.ts` middleware). GET → login sayfası (401), mutating → 401 text.
+- **Auth gate:** `/api/*` route'ları geçerli session ister (`/auth/*` muaf). Yetkisiz
+  istek **401 JSON** döner; istemci SPA `api.ts` içinde 401'i yakalayıp
+  `/auth/google`'a yönlendirir.
 - **Hosted-domain:** OAuth callback'te `verifyDomain` hem `hd` claim'ini hem
   e-posta domainini doğrular (hd spoof'una karşı). Domain dışı giremez.
 - **Session:** HMAC-imzalı cookie + kriptografik **expiry** (`iat` + max-age 8s),
   constant-time compare. `httpOnly`.
-- **CSRF:** cookie tabanlı; tüm POST'larda `_csrf` token (`httpOnly` cookie ↔
-  server-render hidden field). Tek muafiyet: `/logout` (yalnız session siler).
+- **CSRF (double-submit):** non-httpOnly `csrf` cookie (login'de + kimlik doğrulanmış
+  isteklerde basılır) ↔ mutating isteklerde `X-CSRF-Token` header; constant-time
+  compare. Tek muafiyet: `/logout` (yalnız session siler).
 - **Yetki / IDOR:** talep eden yalnız kendi talebini görür/cevaplar
   (`canViewRequest`/`canReply`); admin route'ları `isAdmin` ister. Bulunamayan/
   yetkisiz kaynak **404** (varlık sızdırma yok).
-- **Çıktı kaçışı:** tüm dinamik veri HTML'de `esc()` ile kaçırılır; mail
-  gövdelerinde de user-text (başlık, ret gerekçesi) kaçırılır.
+- **Ek dosyalar:** `nosniff` + CSP sandbox ile servis edilir (allowlist dışı tipler
+  zorla indirme).
+- **Çıktı kaçışı:** istemci React tarafında otomatik; mail gövdelerinde user-text
+  (başlık, ret gerekçesi) `esc()` ile kaçırılır.
 - **Sırlar** `.env`'de, **commit edilmez** (`.gitignore`). Hardcoded credential yok.
 
-Yeni route eklerken: auth gate'in kapsadığını, mutating ise CSRF + yetki +
-id-param NaN guard'ın olduğunu doğrula.
+Yeni route eklerken: auth gate'in kapsadığını, mutating ise CSRF header doğrulaması
++ yetki + id-param NaN guard'ın olduğunu doğrula.
 
 ## 5. i18n / İsimlendirme
 
 - **Kod, dosya adı, değişken, DB alanı, commit mesajı İngilizce.**
-- **UI metinleri Türkçe** (`views.ts`, mail konuları, hata metinleri).
+- **UI metinleri Türkçe** (`src/client/**`, `labels.ts`, mail konuları, hata metinleri).
 - Türkçe karakter dosya/klasör adında kullanma.
 
 ## 6. Test
 
 - **TDD:** önce başarısız test → minimal kod → yeşil → commit.
-- Saf domain mantığı **exhaustive** birim test; route'lar in-memory SQLite +
-  mock auth/mail ile entegrasyon testi. OAuth/SMTP testte mock'lanır.
+- Saf domain mantığı **exhaustive** birim test; route/handler entegrasyon testleri
+  `src/server/**/*.test.ts` içinde in-memory SQLite + mock auth/mail ile `makeHandler`'a
+  karşı koşar. OAuth/SMTP testte mock'lanır.
 - Testler kaynak yanında co-located (`*.test.ts`).
 - **Gate:** `bun test` yeşil olmadan commit yok.
 
