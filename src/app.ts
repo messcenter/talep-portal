@@ -1,6 +1,7 @@
 // src/app.ts
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
+import { serveStatic } from "hono/bun";
 import type { Config } from "./config";
 import type { Repo } from "./db/repo";
 import type { Mailer } from "./mail/mailer";
@@ -31,6 +32,9 @@ export type AppEnv = {
 
 export function buildApp(deps: Deps) {
   const app = new Hono<AppEnv>();
+
+  app.get("/app.css", serveStatic({ path: "./public/app.css" }));
+  app.get("/client.js", serveStatic({ path: "./public/client.js" }));
 
   app.use("*", async (c, next) => {
     const path = c.req.path;

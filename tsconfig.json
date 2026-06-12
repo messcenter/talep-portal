@@ -7,6 +7,8 @@
     "types": ["bun-types"],
     "strict": true,
     "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   }
 }
