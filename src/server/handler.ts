@@ -8,6 +8,7 @@ import { getSessionUser, checkCsrf, MAX_UPLOAD_BYTES } from "./guards";
 import { serializeCookie } from "./cookies";
 import { handleRequests } from "./routes/requests";
 import { handleAdmin } from "./routes/admin";
+import { handleDefinitions } from "./routes/definitions";
 import { handleAuth } from "./routes/auth";
 import { handleAttachment } from "./routes/attachments";
 
@@ -78,6 +79,10 @@ export function makeHandler(deps: Deps) {
       // Admin API: /api/admin/requests, /api/admin/requests/:id/message|decision
       const adminRes = await handleAdmin(path, method, req, user, extraHeaders, deps);
       if (adminRes) return adminRes;
+
+      // Definitions API: GET /api/departments + admin CRUD for departments/modules
+      const def = await handleDefinitions(path, method, req, user, extraHeaders, deps);
+      if (def) return def;
 
       return json({ error: "not found" }, 404, extraHeaders);
     }
