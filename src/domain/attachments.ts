@@ -1,4 +1,4 @@
-// src/domain/attachments.ts — saf doğrulama, sıfır I/O.
+// src/domain/attachments.ts — pure validation, zero I/O.
 export const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 export const MAX_FILES = 10;
 
@@ -14,10 +14,14 @@ export function extForMime(mime: string): string | null {
   return MIME_EXT[mime] ?? null;
 }
 
-// Gerçek türü ilk byte'lardan tespit eder; client'ın gönderdiği MIME'a güvenmeyiz.
+// Detect the real type from the leading bytes; never trust the client-sent MIME.
 export function sniffMime(head: Uint8Array): string | null {
   const b = head;
-  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47)
+  if (
+    b.length >= 8 &&
+    b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
+    b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a
+  )
     return "image/png";
   if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
   if (b.length >= 4 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38)
@@ -47,6 +51,7 @@ export function validateUploads(files: UploadMeta[]): {
   for (const f of files) {
     const mime = sniffMime(f.head);
     mimes.push(mime);
+    // Zero-length files: report once and skip the size/mime errors for this entry.
     if (f.size <= 0) {
       errors.push(`Boş dosya: ${f.name}`);
       continue;
@@ -57,6 +62,7 @@ export function validateUploads(files: UploadMeta[]): {
   return { ok: errors.length === 0, errors, mimes };
 }
 
+// Centralizes the on-disk key format; the storage layer depends on this exact shape.
 export function storageKey(uuid: string, ext: string): string {
   return `${uuid}.${ext}`;
 }

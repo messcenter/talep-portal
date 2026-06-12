@@ -25,6 +25,8 @@ describe("sniffMime", () => {
   test("returns null for unknown / empty", () => {
     expect(sniffMime(sig(0x00, 0x01, 0x02, 0x03))).toBeNull();
     expect(sniffMime(sig())).toBeNull();
+    // RIFF container but AVI (not WEBP) at offset 8 — must not be detected as webp.
+    expect(sniffMime(sig(0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x41, 0x56, 0x49, 0x20))).toBeNull();
   });
 });
 
