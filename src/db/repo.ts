@@ -48,6 +48,10 @@ export type CreateRequestInput = NewRequestInput & {
   requester_email: string;
 };
 
+export type Department = { id: number; name: string; created_at: string };
+export type ModuleRow = { id: number; department_id: number; name: string; created_at: string };
+export type DepartmentWithModules = { id: number; name: string; modules: { id: number; name: string }[] };
+
 export type Repo = ReturnType<typeof makeRepo>;
 
 export function makeRepo(db: Database) {
@@ -194,6 +198,42 @@ export function makeRepo(db: Database) {
         throw new Error(`illegal transition ${current.status} -> ${status}`);
       }
       db.query("UPDATE requests SET status = ? WHERE id = ?").run(status, id);
+    },
+
+    createDepartment(name: string, createdAt: string): Department {
+      return db.query(
+        `INSERT INTO departments (name, created_at) VALUES (?, ?) RETURNING *`,
+      ).get(name, createdAt) as Department;
+    },
+    deleteDepartment(id: number): void {
+      db.query(`DELETE FROM departments WHERE id = ?`).run(id);
+    },
+    getDepartment(id: number): Department | null {
+      return (db.query(`SELECT * FROM departments WHERE id = ?`).get(id) as Department) ?? null;
+    },
+    getDepartmentByName(name: string): Department | null {
+      return (db.query(`SELECT * FROM departments WHERE name = ?`).get(name) as Department) ?? null;
+    },
+    createModule(departmentId: number, name: string, createdAt: string): ModuleRow {
+      return db.query(
+        `INSERT INTO modules (department_id, name, created_at) VALUES (?, ?, ?) RETURNING *`,
+      ).get(departmentId, name, createdAt) as ModuleRow;
+    },
+    deleteModule(id: number): void {
+      db.query(`DELETE FROM modules WHERE id = ?`).run(id);
+    },
+    listModuleNames(departmentId: number): string[] {
+      return (db.query(`SELECT name FROM modules WHERE department_id = ? ORDER BY name`)
+        .all(departmentId) as { name: string }[]).map((r) => r.name);
+    },
+    listDepartmentsWithModules(): DepartmentWithModules[] {
+      const depts = db.query(`SELECT * FROM departments ORDER BY name`).all() as Department[];
+      return depts.map((d) => ({
+        id: d.id,
+        name: d.name,
+        modules: db.query(`SELECT id, name FROM modules WHERE department_id = ? ORDER BY name`)
+          .all(d.id) as { id: number; name: string }[],
+      }));
     },
 
     addMessageAndTransition(

@@ -32,6 +32,18 @@ function seedSchema(db: Database): Database {
       message_id INTEGER REFERENCES messages(id),
       storage_key TEXT NOT NULL, original_name TEXT NOT NULL,
       mime TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE modules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(department_id, name)
+    );
   `);
   return db;
 }
@@ -157,5 +169,41 @@ describe("attachments", () => {
     const id = repo.listAttachmentsByRequest(r.id)[0]!.id;
     expect(repo.getAttachment(id)?.storage_key).toBe("k1.png");
     expect(repo.getAttachment(999999)).toBeNull();
+  });
+});
+
+describe("departments + modules", () => {
+  test("departments + modules CRUD with cascade", () => {
+    const d1 = repo.createDepartment("Üretim", "2026-01-01T00:00:00Z");
+    const d2 = repo.createDepartment("Muhasebe", "2026-01-01T00:00:00Z");
+    expect(d1.id).toBeGreaterThan(0);
+    const m1 = repo.createModule(d1.id, "Stok", "2026-01-01T00:00:00Z");
+    repo.createModule(d1.id, "Planlama", "2026-01-01T00:00:00Z");
+
+    const list = repo.listDepartmentsWithModules();
+    const uretim = list.find((d) => d.name === "Üretim")!;
+    expect(uretim.modules.map((m) => m.name).sort()).toEqual(["Planlama", "Stok"]);
+    expect(list.find((d) => d.name === "Muhasebe")!.modules).toEqual([]);
+
+    expect(repo.getDepartmentByName("Üretim")?.id).toBe(d1.id);
+    expect(repo.getDepartmentByName("Yok")).toBeNull();
+    expect(repo.getDepartment(d1.id)?.name).toBe("Üretim");
+    expect(repo.listModuleNames(d1.id).sort()).toEqual(["Planlama", "Stok"]);
+
+    repo.deleteDepartment(d1.id);
+    expect(repo.getDepartmentByName("Üretim")).toBeNull();
+    expect(repo.listModuleNames(d1.id)).toEqual([]); // cascade removed modules
+    void d2; void m1;
+  });
+
+  test("duplicate department name throws", () => {
+    repo.createDepartment("İK", "2026-01-01T00:00:00Z");
+    expect(() => repo.createDepartment("İK", "2026-01-01T00:00:00Z")).toThrow();
+  });
+
+  test("duplicate module within a department throws", () => {
+    const d = repo.createDepartment("Satış", "2026-01-01T00:00:00Z");
+    repo.createModule(d.id, "CRM", "2026-01-01T00:00:00Z");
+    expect(() => repo.createModule(d.id, "CRM", "2026-01-01T00:00:00Z")).toThrow();
   });
 });

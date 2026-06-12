@@ -51,5 +51,20 @@ function migrate(db: Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_attachments_request ON attachments(request_id);
     CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
+
+    CREATE TABLE IF NOT EXISTS departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS modules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(department_id, name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_modules_department ON modules(department_id);
   `);
 }
