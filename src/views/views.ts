@@ -1,5 +1,5 @@
 // src/views/views.ts
-import type { RequestRow, MessageRow } from "../db/repo";
+import type { RequestRow, MessageRow, AttachmentRow } from "../db/repo";
 import { statusLabelTr, type RequestStatus } from "../domain/status";
 import { REQUEST_TYPES, PRIORITIES } from "../domain/validation";
 
@@ -117,7 +117,25 @@ export function myList(user: { name: string }, rows: RequestRow[]): string {
   );
 }
 
-export function thread(messages: MessageRow[]): string {
+export function attachmentChips(requestId: number, atts: AttachmentRow[]): string {
+  if (!atts.length) return "";
+  const items = atts
+    .map((a) => {
+      const url = `/requests/${requestId}/attachments/${a.id}`;
+      if (a.mime.startsWith("image/")) {
+        return `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="${esc(a.original_name)}" class="h-24 w-24 object-cover border rounded"></a>`;
+      }
+      return `<a href="${url}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 border rounded px-3 py-2 text-sm bg-white hover:bg-slate-50">📄 ${esc(a.original_name)}</a>`;
+    })
+    .join("");
+  return `<div class="flex flex-wrap gap-3 mt-2">${items}</div>`;
+}
+
+export function thread(
+  messages: MessageRow[],
+  attByMessage: Map<number, AttachmentRow[]>,
+  requestId: number,
+): string {
   if (!messages.length)
     return `<p class="text-slate-500 text-sm">Henüz mesaj yok.</p>`;
   return messages
@@ -126,6 +144,7 @@ export function thread(messages: MessageRow[]): string {
       return `<div class="mb-3 ${isAdmin ? "" : "pl-8"}">
         <div class="text-xs text-slate-400 mb-1">${isAdmin ? "Yönetici (soru)" : "Talep eden (cevap)"} · ${esc(m.created_at)}</div>
         <div class="bg-white border rounded p-3 whitespace-pre-wrap">${esc(m.body)}</div>
+        ${attachmentChips(requestId, attByMessage.get(m.id) ?? [])}
       </div>`;
     })
     .join("");
@@ -135,17 +154,27 @@ export function requestDetail(opts: {
   user: { name: string };
   r: RequestRow;
   messages: MessageRow[];
+  attachments: AttachmentRow[];
   canReply: boolean;
   isAdmin: boolean;
   csrf: string;
 }): string {
-  const { r, messages, canReply, isAdmin, csrf, user } = opts;
+  const { r, messages, attachments, canReply, isAdmin, csrf, user } = opts;
   const meta = `<div class="bg-white border rounded p-4 mb-4">
     <h1 class="text-xl font-semibold">${esc(r.request_no)} · ${esc(r.title)}</h1>
     <div class="text-sm text-slate-500 mb-2">${esc(statusLabelTr(r.status))} · ${esc(PRIO_TR[r.priority] ?? r.priority)} · ${esc(r.department)}</div>
     <p class="whitespace-pre-wrap mb-2">${esc(r.description)}</p>
     <p class="text-sm"><span class="font-medium">Beklenen fayda:</span> ${esc(r.expected_benefit)}</p>
   </div>`;
+  const requestLevel = attachments.filter((a) => a.message_id == null);
+  const byMessage = new Map<number, AttachmentRow[]>();
+  for (const a of attachments) {
+    if (a.message_id == null) continue;
+    const list = byMessage.get(a.message_id) ?? [];
+    list.push(a);
+    byMessage.set(a.message_id, list);
+  }
+  const metaWithFiles = meta + attachmentChips(r.id, requestLevel);
   const input = `class="w-full border rounded px-3 py-2"`;
   const replyBox = canReply
     ? `<form method="post" action="/requests/${r.id}/reply" enctype="multipart/form-data" class="bg-white border rounded p-4 mt-4">
@@ -173,7 +202,7 @@ export function requestDetail(opts: {
     : "";
   return layout(
     r.request_no,
-    `${meta}<h2 class="font-semibold mb-2">Netleştirme</h2>${thread(messages)}${replyBox}${adminBox}`,
+    `${metaWithFiles}<h2 class="font-semibold mb-2">Netleştirme</h2>${thread(messages, byMessage, r.id)}${replyBox}${adminBox}`,
     user,
   );
 }

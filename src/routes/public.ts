@@ -62,6 +62,7 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
         user,
         r,
         messages: deps.repo.listMessages(r.id),
+        attachments: deps.repo.listAttachmentsByRequest(r.id),
         canReply: canReply(user, r),
         isAdmin: user.isAdmin,
         csrf: c.get("csrf"),

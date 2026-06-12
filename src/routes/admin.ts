@@ -89,6 +89,7 @@ export function registerAdminRoutes(app: Hono<AppEnv>, deps: Deps) {
         user: c.get("user"),
         r,
         messages: deps.repo.listMessages(r.id),
+        attachments: deps.repo.listAttachmentsByRequest(r.id),
         canReply: false,
         isAdmin: true,
         csrf: c.get("csrf"),

@@ -268,6 +268,26 @@ describe("reply flow", () => {
   });
 });
 
+test("request detail shows an image thumbnail and a pdf link", async () => {
+  const r = repo.createRequest(
+    { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+      department: "d", application: "ERP", module_area: "",
+      request_type: "feature", title: "t", description: "d",
+      expected_benefit: "f", priority: "high" },
+    "t",
+    [
+      { storage_key: "p.png", original_name: "ekran.png", mime: "image/png", size_bytes: 3 },
+      { storage_key: "d.pdf", original_name: "sartname.pdf", mime: "application/pdf", size_bytes: 4 },
+    ],
+  );
+  const res = await app.request(`/requests/${r.id}`, {
+    headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+  });
+  const html = await res.text();
+  expect(html).toContain(`<img src="/requests/${r.id}/attachments/`);
+  expect(html).toContain("sartname.pdf");
+});
+
 describe("serve attachment", () => {
   async function seedWithAttachment() {
     const r = repo.createRequest(
