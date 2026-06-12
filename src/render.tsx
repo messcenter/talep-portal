@@ -2,7 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactElement } from "react";
 
 // SSR helper: render a React tree to a full HTML document string.
-// Mirrors the old layout()'s doctype + html skeleton, but content is React.
+// Owns the <html>/<head>/<body> skeleton; callers pass body *content*
+// (e.g. <Layout>…</Layout>, which returns a fragment, not a <body>).
 export function render(title: string, body: ReactElement): string {
   return "<!doctype html>" + renderToStaticMarkup(
     <html lang="tr">
@@ -12,7 +13,7 @@ export function render(title: string, body: ReactElement): string {
         <title>{`${title} · Talep Portalı`}</title>
         <link rel="stylesheet" href="/app.css" />
       </head>
-      {body}
+      <body className="min-h-screen">{body}</body>
     </html>,
   );
 }

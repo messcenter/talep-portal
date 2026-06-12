@@ -5,6 +5,7 @@
     "": {
       "name": "talep-portal",
       "dependencies": {
+        "@radix-ui/react-dialog": "^1.1.16",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "hono": "^4.6.0",
@@ -16,7 +17,6 @@
         "zod": "^3.23.0",
       },
       "devDependencies": {
-        "@radix-ui/react-dialog": "^1.1.16",
         "@types/nodemailer": "^6.4.0",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
