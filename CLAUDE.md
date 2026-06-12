@@ -18,7 +18,8 @@ yerini alır.
 
 - **Bun + Hono + SQLite (`bun:sqlite`)**, sunucu-tarafı render HTML (Tailwind CDN),
   nodemailer (Zoho SMTP), Zod. Frontend build adımı yok.
-- Tek process, tek `data.db` dosyası. **Yedek = `data.db` dosyasını kopyala.**
+- Tek process, tek `data.db` dosyası + `uploads/` ek klasörü. **Yedek = `data.db`
+  dosyasını ve `uploads/` klasörünü birlikte kopyala.**
 - Giriş: Google Workspace OAuth, `hd=kokilmetal.com.tr` ile kısıtlı.
 
 ```bash
@@ -37,11 +38,12 @@ bun test               # tüm testler
 | `src/db/` | tüm SQL + migration | iş mantığı taşımaz |
 | `src/auth/` | session (HMAC) + Google OAuth yardımcıları | — |
 | `src/mail/` | best-effort mailer (hata akışı bloklamaz) | — |
+| `src/storage/` | dosya sistemi ek I/O (put/read/remove) | `Deps` ile enjekte; domain'e sızma |
 | `src/views/` | saf string HTML render | I/O yok |
 | `src/routes/` | ince adapter: doğrula → domain'e dispatch → repo/mail | iş kuralı gömme; domain'e delege et |
 | `src/app.ts` | Hono fabrikası + auth/CSRF middleware + DI (`Deps`) | — |
 
-Bağımlılıklar `Deps` ile **dışarıdan enjekte edilir** (config, repo, mailer, `now`)
+Bağımlılıklar `Deps` ile **dışarıdan enjekte edilir** (config, repo, mailer, storage, `now`)
 — bu testte mock geçmeyi sağlar; bunu koru.
 
 ## 3. Durum Makinesi (SSoT: `src/domain/status.ts`)
@@ -106,7 +108,6 @@ id-param NaN guard'ın olduğunu doğrula.
 
 - "kabul_edildi" → GitHub issue otomatik dönüştürme.
 - Yönetici dashboard'u (modül/öncelik/durum kırılımı, açık-talep yaşı).
-- Görsel/dosya ekleri.
 - AI ile otomatik soru üretimi.
 
 Bu alanlara dokunmadan önce `docs/superpowers/specs/` altında tasarımı netleştir.
