@@ -67,6 +67,15 @@ describe("GET / (auth gate)", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("Yeni Talep");
   });
+  test("rendered new-request form carries the CSRF token", async () => {
+    const res = await app.request("/", {
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+    });
+    expect(res.status).toBe(200);
+    // The browser only submits a token it was given. Without this hidden
+    // field, every POST /requests fails CSRF verification (403).
+    expect(await res.text()).toContain('name="_csrf" value="test-csrf"');
+  });
 });
 
 describe("POST /requests", () => {

@@ -55,6 +55,7 @@ export function loginPage(): string {
 
 export function newRequestForm(
   user: { name: string },
+  csrf: string,
   errors?: string[],
 ): string {
   const opt = (
@@ -73,6 +74,7 @@ export function newRequestForm(
     "Yeni Talep",
     `<h1 class="text-xl font-semibold mb-4">Yeni Talep</h1>${err}
     <form method="post" action="/requests" class="bg-white rounded-lg border p-6">
+      <input type="hidden" name="_csrf" value="${esc(csrf)}">
       ${field("Departman", `<input ${input} name="department" required>`)}
       ${field("Uygulama", `<input ${input} name="application" value="ERP" required>`)}
       ${field("Modül/Alan (opsiyonel)", `<input ${input} name="module_area">`)}

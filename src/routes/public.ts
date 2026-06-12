@@ -7,7 +7,7 @@ import { canViewRequest, canReply } from "../domain/authz";
 import { newRequestForm, myList, requestDetail, esc } from "../views/views";
 
 export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
-  app.get("/", (c) => c.html(newRequestForm(c.get("user"))));
+  app.get("/", (c) => c.html(newRequestForm(c.get("user"), c.get("csrf"))));
 
   app.post("/requests", async (c) => {
     const user = c.get("user");
@@ -15,7 +15,7 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
     const parsed = newRequestSchema.safeParse(form);
     if (!parsed.success) {
       const errs = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
-      return c.html(newRequestForm(user, errs), 400);
+      return c.html(newRequestForm(user, c.get("csrf"), errs), 400);
     }
     const r = deps.repo.createRequest(
       { ...parsed.data, requester_name: user.name, requester_email: user.email },
