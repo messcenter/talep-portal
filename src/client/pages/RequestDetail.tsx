@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
 import { Attachments, type AttachmentRow } from "../components/Attachments";
 import { Thread, type MessageRow } from "../components/Thread";
+import { AdminControls } from "../components/AdminControls";
 import { PRIORITY_LABEL } from "../labels";
 import type { RequestRow } from "../components/RequestCard";
 
@@ -285,7 +286,10 @@ export function RequestDetail() {
           requestId={req.id}
         />
 
-        {/* B4: admin controls */}
+        {/* B4: admin controls — clarification form + accept/reject decision */}
+        {user.isAdmin && (
+          <AdminControls requestId={req.id} status={req.status} onDone={load} />
+        )}
 
         {/* Reply form — requester only, status === "clarifying" */}
         {canReply && (

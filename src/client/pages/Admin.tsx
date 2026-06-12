@@ -1,0 +1,121 @@
+// src/client/pages/Admin.tsx
+// "Admin Paneli - Tüm Talepler" — admin-only list of every request with status filter tabs.
+import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { apiGet } from "../api";
+import { useUser } from "../auth";
+import { RequestCard, type RequestRow } from "../components/RequestCard";
+import { statusLabelTr, type RequestStatus } from "../../domain/status";
+
+function Spinner() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <div
+        className="w-7 h-7 rounded-full border-2 border-border-subtle border-t-primary animate-spin"
+        role="status"
+        aria-label="Yükleniyor"
+      />
+    </div>
+  );
+}
+
+// "Hepsi" (no filter) + the 5 statuses.
+const STATUSES: RequestStatus[] = [
+  "new",
+  "clarifying",
+  "answered",
+  "accepted",
+  "rejected",
+];
+
+export function Admin() {
+  const user = useUser();
+  // Belt-and-suspenders: backend also 403s admin routes.
+  if (!user.isAdmin) return <Navigate to="/my" replace />;
+
+  // null = "Hepsi" (no status param)
+  const [active, setActive] = useState<RequestStatus | null>(null);
+  const [rows, setRows] = useState<RequestRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRows(null);
+    setError(null);
+    const qs = active ? `?status=${active}` : "";
+    apiGet<RequestRow[]>(`/api/admin/requests${qs}`)
+      .then((data) => {
+        if (!cancelled) setRows(data);
+      })
+      .catch((err) => {
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "Bir hata oluştu.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
+
+  function tabClass(isActive: boolean): string {
+    return [
+      "text-xs font-medium px-3 py-1.5 rounded-full transition-colors",
+      isActive
+        ? "bg-primary text-primary-fg"
+        : "bg-white border border-border-subtle text-on-surface-variant hover:bg-surface-tonal",
+    ].join(" ");
+  }
+
+  return (
+    <main className="max-w-4xl mx-auto px-4 py-6">
+      {/* Page heading */}
+      <h1 className="text-2xl font-bold tracking-tight text-on-surface mb-4">
+        Tüm Talepler
+      </h1>
+
+      {/* Status filter tabs */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <button
+          type="button"
+          className={tabClass(active === null)}
+          onClick={() => setActive(null)}
+        >
+          Hepsi
+        </button>
+        {STATUSES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={tabClass(active === s)}
+            onClick={() => setActive(s)}
+          >
+            {statusLabelTr(s)}
+          </button>
+        ))}
+      </div>
+
+      {/* States */}
+      {!rows && !error && <Spinner />}
+
+      {error && (
+        <div
+          role="alert"
+          className="bg-danger/10 border border-danger/30 text-danger rounded p-3 text-sm"
+        >
+          {error}
+        </div>
+      )}
+
+      {rows && rows.length === 0 && (
+        <div className="text-center py-16 text-on-surface-variant">Kayıt yok.</div>
+      )}
+
+      {rows && rows.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {rows.map((r) => (
+            <RequestCard key={r.id} r={r} />
+          ))}
+        </div>
+      )}
+    </main>
+  );
+}

@@ -15,14 +15,7 @@ import { Login } from "./pages/Login";
 import { NewRequest } from "./pages/NewRequest";
 import { MyList } from "./pages/MyList";
 import { RequestDetail } from "./pages/RequestDetail";
-
-function AdminPage() {
-  return (
-    <main className="max-w-4xl mx-auto px-4 py-6">
-      <div className="text-on-surface-variant">Yönetim Paneli</div>
-    </main>
-  );
-}
+import { Admin } from "./pages/Admin";
 
 // ---- Spinner ----
 
@@ -143,7 +136,7 @@ export function App() {
           <Route index element={<NewRequest />} />
           <Route path="/my" element={<MyList />} />
           <Route path="/requests/:id" element={<RequestDetail />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin" element={<Admin />} />
         </Route>
 
         {/* Fallback: redirect unknown paths to home */}
