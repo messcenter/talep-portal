@@ -30,9 +30,13 @@ const STATUSES: RequestStatus[] = [
 
 export function Admin() {
   const user = useUser();
-  // Belt-and-suspenders: backend also 403s admin routes.
+  // Belt-and-suspenders: backend also 403s admin routes. The early return lives
+  // here (no hooks below it) so AdminInner can call hooks unconditionally.
   if (!user.isAdmin) return <Navigate to="/my" replace />;
+  return <AdminInner />;
+}
 
+function AdminInner() {
   // null = "Hepsi" (no status param)
   const [active, setActive] = useState<RequestStatus | null>(null);
   const [rows, setRows] = useState<RequestRow[] | null>(null);
