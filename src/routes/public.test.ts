@@ -91,6 +91,12 @@ describe("GET / (auth gate)", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("Yeni Talep");
   });
+  test("new-request form is multipart with a file input", async () => {
+    const res = await app.request("/", { headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") } });
+    const html = await res.text();
+    expect(html).toContain('enctype="multipart/form-data"');
+    expect(html).toContain('type="file"');
+  });
   test("rendered new-request form carries the CSRF token", async () => {
     const res = await app.request("/", {
       headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
@@ -151,6 +157,54 @@ describe("POST /requests", () => {
     });
     expect(res.status).toBe(400);
     expect(repo.listAll({}).length).toBe(0);
+  });
+
+  const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+
+  test("multipart upload stores attachment row and file bytes", async () => {
+    const fd = new FormData();
+    fd.append("_csrf", "test-csrf");
+    fd.append("department", "Satın alma");
+    fd.append("application", "ERP");
+    fd.append("module_area", "");
+    fd.append("request_type", "feature");
+    fd.append("priority", "high");
+    fd.append("title", "Kalıp modülü");
+    fd.append("description", "detay");
+    fd.append("expected_benefit", "fayda");
+    fd.append("files", new File([PNG_BYTES], "shot.png", { type: "image/png" }));
+    const res = await app.request("/requests", {
+      method: "POST",
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+      body: fd,
+    });
+    expect(res.status).toBe(302);
+    const all = repo.listAll({});
+    const atts = repo.listAttachmentsByRequest(all[0]!.id);
+    expect(atts.length).toBe(1);
+    expect(atts[0]!.mime).toBe("image/png");
+    expect(mem.store.get(atts[0]!.storage_key)).toEqual(PNG_BYTES);
+  });
+
+  test("rejects a spoofed file type with 400 and stores nothing", async () => {
+    const fd = new FormData();
+    fd.append("_csrf", "test-csrf");
+    fd.append("department", "d");
+    fd.append("application", "ERP");
+    fd.append("request_type", "feature");
+    fd.append("priority", "high");
+    fd.append("title", "t");
+    fd.append("description", "d");
+    fd.append("expected_benefit", "f");
+    fd.append("files", new File([new Uint8Array([0x4d, 0x5a, 0x90])], "x.png", { type: "image/png" }));
+    const res = await app.request("/requests", {
+      method: "POST",
+      headers: { Cookie: cookie("a@kokilmetal.com.tr", "A") },
+      body: fd,
+    });
+    expect(res.status).toBe(400);
+    expect(repo.listAll({}).length).toBe(0);
+    expect(mem.store.size).toBe(0);
   });
 });
 

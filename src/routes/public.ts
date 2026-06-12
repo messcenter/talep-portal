@@ -5,6 +5,7 @@ import { body } from "../app";
 import { newRequestSchema, replySchema } from "../domain/validation";
 import { canViewRequest, canReply } from "../domain/authz";
 import { newRequestForm, myList, requestDetail, esc } from "../views/views";
+import { collectFiles, processUploads, discardUploads } from "./uploads";
 
 export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
   app.get("/", (c) => c.html(newRequestForm(c.get("user"), c.get("csrf"))));
@@ -17,10 +18,19 @@ export function registerPublicRoutes(app: Hono<AppEnv>, deps: Deps) {
       const errs = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
       return c.html(newRequestForm(user, c.get("csrf"), errs), 400);
     }
-    const r = deps.repo.createRequest(
-      { ...parsed.data, requester_name: user.name, requester_email: user.email },
-      deps.now(),
-    );
+    const up = await processUploads(collectFiles(form), deps.storage);
+    if (!up.ok) return c.html(newRequestForm(user, c.get("csrf"), up.errors), 400);
+    let r;
+    try {
+      r = deps.repo.createRequest(
+        { ...parsed.data, requester_name: user.name, requester_email: user.email },
+        deps.now(),
+        up.attachments,
+      );
+    } catch (err) {
+      await discardUploads(deps.storage, up.attachments);
+      throw err;
+    }
     for (const admin of deps.config.adminEmails) {
       await deps.mailer.send(
         admin,

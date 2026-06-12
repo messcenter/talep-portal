@@ -73,7 +73,7 @@ export function newRequestForm(
   return layout(
     "Yeni Talep",
     `<h1 class="text-xl font-semibold mb-4">Yeni Talep</h1>${err}
-    <form method="post" action="/requests" class="bg-white rounded-lg border p-6">
+    <form method="post" action="/requests" enctype="multipart/form-data" class="bg-white rounded-lg border p-6">
       <input type="hidden" name="_csrf" value="${esc(csrf)}">
       ${field("Departman", `<input ${input} name="department" required>`)}
       ${field("Uygulama", `<input ${input} name="application" value="ERP" required>`)}
@@ -83,6 +83,10 @@ export function newRequestForm(
       ${field("Başlık", `<input ${input} name="title" required>`)}
       ${field("Açıklama", `<textarea ${input} name="description" rows="4" required></textarea>`)}
       ${field("Beklenen Fayda", `<textarea ${input} name="expected_benefit" rows="2" required></textarea>`)}
+      ${field(
+        "Ekler (resim/PDF, en çok 10 dosya, 10 MB)",
+        `<input type="file" name="files" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" class="block w-full text-sm">`,
+      )}
       <button class="bg-slate-800 text-white px-5 py-2 rounded">Gönder</button>
     </form>`,
     user,
