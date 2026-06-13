@@ -8,14 +8,15 @@ export type Transport = {
     to: string;
     subject: string;
     html: string;
+    text?: string;
   }): Promise<unknown>;
 };
 
 export function makeMailer(transport: Transport, from: string) {
   return {
-    async send(to: string, subject: string, html: string): Promise<void> {
+    async send(to: string, subject: string, html: string, text?: string): Promise<void> {
       try {
-        await transport.sendMail({ from, to, subject, html });
+        await transport.sendMail({ from, to, subject, html, ...(text !== undefined ? { text } : {}) });
       } catch (err) {
         console.error(`[mail] gönderilemedi to=${to} subject=${subject}`, err);
       }

@@ -29,4 +29,17 @@ describe("mailer (best-effort)", () => {
     const mail = makeMailer(tr, "From <f@k.com>");
     await expect(mail.send("to@k.com", "s", "b")).resolves.toBeUndefined();
   });
+  test("send forwards text to transport when provided", async () => {
+    const sent: any[] = [];
+    const mailer = makeMailer({ async sendMail(m: any) { sent.push(m); return undefined; } }, "From <f@k.com>");
+    await mailer.send("to@x.com", "Konu", "<p>html</p>", "düz metin");
+    expect(sent[0].text).toBe("düz metin");
+    expect(sent[0].html).toBe("<p>html</p>");
+  });
+  test("send omits text when not provided", async () => {
+    const sent: any[] = [];
+    const mailer = makeMailer({ async sendMail(m: any) { sent.push(m); return undefined; } }, "From <f@k.com>");
+    await mailer.send("to@x.com", "Konu", "<p>html</p>");
+    expect(sent[0].text).toBeUndefined();
+  });
 });
