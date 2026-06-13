@@ -56,12 +56,19 @@ export function NewRequest() {
   const [depts, setDepts] = useState<Dept[] | null>(null);
   const [dept, setDept] = useState("");
   const [moduleName, setModuleName] = useState("");
+  const [apps, setApps] = useState<{ id: number; name: string }[] | null>(null);
+  const [app, setApp] = useState("");
 
   useEffect(() => {
     apiGet<Dept[]>("/api/departments")
       .then(setDepts)
       .catch((err) =>
         setErrorMsg(err instanceof Error ? err.message : "Departmanlar yüklenemedi."),
+      );
+    apiGet<{ id: number; name: string }[]>("/api/applications")
+      .then(setApps)
+      .catch((err) =>
+        setErrorMsg(err instanceof Error ? err.message : "Uygulamalar yüklenemedi."),
       );
   }, []);
 
@@ -80,6 +87,7 @@ export function NewRequest() {
     // set them explicitly so the submitted field names/values are guaranteed.
     fd.set("department", dept);
     fd.set("module_area", moduleName);
+    fd.set("application", app);
 
     const get = (k: string) => ((fd.get(k) as string) ?? "").trim();
     const errs: Record<string, string> = {};
@@ -130,8 +138,8 @@ export function NewRequest() {
           </div>
         )}
 
-        {/* Still loading departments */}
-        {!depts && !errorMsg && (
+        {/* Still loading departments or applications */}
+        {(!depts || !apps) && !errorMsg && (
           <p className="text-on-surface-variant">Yükleniyor…</p>
         )}
 
@@ -142,7 +150,13 @@ export function NewRequest() {
           </div>
         )}
 
-        {depts && depts.length > 0 && (
+        {apps && apps.length === 0 && (
+          <div className="bg-surface-tonal border border-border-subtle rounded p-4 text-sm text-on-surface mt-2">
+            Henüz uygulama tanımlanmamış. Lütfen yöneticiye başvurun.
+          </div>
+        )}
+
+        {depts && depts.length > 0 && apps && apps.length > 0 && (
         <form ref={formRef} onSubmit={handleSubmit} noValidate>
           {/* ---- Section 1: Kapsam ---- */}
           <section className="pb-5">
@@ -179,17 +193,22 @@ export function NewRequest() {
                 <FieldLabel htmlFor="application" required>
                   Uygulama
                 </FieldLabel>
-                <input
+                <select
                   id="application"
                   name="application"
-                  type="text"
                   required
-                  maxLength={120}
-                  defaultValue="ERP"
-                  placeholder="ör. ERP"
+                  value={app}
+                  onChange={(e) => setApp(e.target.value)}
                   className={inputClass}
                   disabled={submitting}
-                />
+                >
+                  <option value="">Seçiniz…</option>
+                  {apps?.map((a) => (
+                    <option key={a.id} value={a.name}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
