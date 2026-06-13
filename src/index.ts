@@ -28,6 +28,7 @@ Bun.serve({
   routes: {
     // SPA entry point for top-level navigation paths.
     "/": spaShell,
+    "/yeni": spaShell,
     "/my": spaShell,
     "/admin": spaShell,
     // NOTE: /requests/:id is a single-segment param route — it will NOT match

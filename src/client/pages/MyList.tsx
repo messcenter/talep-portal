@@ -44,7 +44,7 @@ export function MyList() {
         <h1 className="text-2xl font-bold tracking-tight text-on-surface">
           Taleplerim
         </h1>
-        <Link to="/">
+        <Link to="/yeni">
           <Button variant="primary" size="sm">
             Yeni talep
           </Button>
@@ -67,7 +67,7 @@ export function MyList() {
         <div className="text-center py-16 text-on-surface-variant">
           <p className="mb-3">Henüz talebiniz yok.</p>
           <Link
-            to="/"
+            to="/yeni"
             className="text-primary font-medium hover:underline"
           >
             Yeni talep oluşturun.

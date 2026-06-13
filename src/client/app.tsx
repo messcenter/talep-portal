@@ -10,7 +10,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { apiGet } from "./api";
-import { UserContext, type User } from "./auth";
+import { UserContext, useUser, type User } from "./auth";
 import { Login } from "./pages/Login";
 import { NewRequest } from "./pages/NewRequest";
 import { MyList } from "./pages/MyList";
@@ -128,6 +128,14 @@ function AppLayout() {
   );
 }
 
+// ---- Home redirector ----
+// Index route: send users to a role-appropriate landing page.
+
+function Home() {
+  const user = useUser();
+  return <Navigate to={user.isAdmin ? "/admin" : "/my"} replace />;
+}
+
 // ---- Root app ----
 
 export function App() {
@@ -139,7 +147,8 @@ export function App() {
 
         {/* Authenticated shell — all children require a valid session */}
         <Route element={<AppLayout />}>
-          <Route index element={<NewRequest />} />
+          <Route index element={<Home />} />
+          <Route path="/yeni" element={<NewRequest />} />
           <Route path="/my" element={<MyList />} />
           <Route path="/requests/:id" element={<RequestDetail />} />
           <Route path="/admin" element={<Admin />} />
