@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiGet, apiSend } from "../api";
+import { useToast } from "../components/Toast";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { inputClass } from "../components/forms";
@@ -46,6 +47,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 export function NewRequest() {
   const navigate = useNavigate();
+  const toast = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +110,7 @@ export function NewRequest() {
     try {
       const result = await apiSend<{ id: number }>("/api/requests", "POST", fd);
       if (result) {
+        toast.show("Talebiniz oluşturuldu.");
         navigate(`/requests/${result.id}`);
       }
     } catch (err) {

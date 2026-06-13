@@ -6,6 +6,7 @@ import { useUser } from "../auth";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 
 type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
 
@@ -21,6 +22,7 @@ export function Definitions() {
 }
 
 function DefinitionsInner() {
+  const toast = useToast();
   const [depts, setDepts] = useState<Dept[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newDept, setNewDept] = useState("");
@@ -47,6 +49,7 @@ function DefinitionsInner() {
     try {
       await apiSend("/api/admin/departments", "POST", JSON.stringify({ name }), "application/json");
       setNewDept("");
+      toast.show("Eklendi.");
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");
@@ -55,6 +58,7 @@ function DefinitionsInner() {
   async function delDept(id: number) {
     try {
       await apiSend(`/api/admin/departments/${id}`, "DELETE");
+      toast.show("Silindi.");
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");
@@ -71,6 +75,7 @@ function DefinitionsInner() {
         "application/json",
       );
       reset();
+      toast.show("Eklendi.");
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");
@@ -79,6 +84,7 @@ function DefinitionsInner() {
   async function delModule(id: number) {
     try {
       await apiSend(`/api/admin/modules/${id}`, "DELETE");
+      toast.show("Silindi.");
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");
@@ -90,6 +96,7 @@ function DefinitionsInner() {
     try {
       await apiSend("/api/admin/applications", "POST", JSON.stringify({ name }), "application/json");
       setNewApp("");
+      toast.show("Eklendi.");
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");
@@ -98,6 +105,7 @@ function DefinitionsInner() {
   async function delApp(id: number) {
     try {
       await apiSend(`/api/admin/applications/${id}`, "DELETE");
+      toast.show("Silindi.");
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");

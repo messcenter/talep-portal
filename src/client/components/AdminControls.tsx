@@ -15,6 +15,7 @@ import {
 import { isTerminal, type RequestStatus } from "../../domain/status";
 import { RichTextEditor } from "./RichTextEditor";
 import { FilePicker } from "./FilePicker";
+import { useToast } from "./Toast";
 
 // ---- Clarification message form ----
 
@@ -25,6 +26,7 @@ function ClarificationForm({
   requestId: number;
   onDone: () => void;
 }) {
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
@@ -49,6 +51,7 @@ function ClarificationForm({
       formRef.current.reset();
       setFiles([]);
       setEditorKey((k) => k + 1);
+      toast.show("Soru eklendi.");
       onDone();
     } catch (err) {
       setErrorMsg(
@@ -110,6 +113,7 @@ function DecisionForm({
   requestId: number;
   onDone: () => void;
 }) {
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -125,6 +129,7 @@ function DecisionForm({
       await apiSend(`/api/admin/requests/${requestId}/decision`, "POST", fd);
       setRejectOpen(false);
       setRejectReason("");
+      toast.show("Karar kaydedildi.");
       onDone();
     } catch (err) {
       setErrorMsg(

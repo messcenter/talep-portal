@@ -3,6 +3,7 @@ import { apiSend } from "../api";
 import { Button } from "../../components/ui/button";
 import { RichTextEditor } from "./RichTextEditor";
 import { FilePicker } from "./FilePicker";
+import { useToast } from "./Toast";
 
 // ---- Reply form (requester only, status === "clarifying") ----
 
@@ -13,6 +14,7 @@ export function ReplyForm({
   requestId: number;
   onSuccess: () => void;
 }) {
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -37,6 +39,7 @@ export function ReplyForm({
       formRef.current.reset();
       setFiles([]);
       setEditorKey((k) => k + 1);
+      toast.show("Cevabınız gönderildi.");
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Beklenmeyen bir hata oluştu.";
