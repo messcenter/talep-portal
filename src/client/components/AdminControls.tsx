@@ -44,6 +44,10 @@ function ClarificationForm({
     setErrorMsg(null);
 
     const fd = new FormData(formRef.current);
+
+    const body = ((fd.get("body") as string) ?? "").trim();
+    if (!body) { setErrorMsg("Soru gerekli"); setSubmitting(false); return; }
+
     try {
       await apiSend(`/api/admin/requests/${requestId}/message`, "POST", fd);
       formRef.current.reset();
@@ -166,7 +170,13 @@ function DecisionForm({
           Kabul et
         </Button>
 
-        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <Dialog
+          open={rejectOpen}
+          onOpenChange={(open) => {
+            setRejectOpen(open);
+            if (open) setErrorMsg(null);
+          }}
+        >
           <DialogTrigger asChild>
             <Button type="button" variant="danger" size="md" disabled={submitting}>
               Reddet
@@ -189,6 +199,10 @@ function DecisionForm({
               />
             </div>
 
+            {errorMsg && (
+              <p className="text-danger text-xs mb-2" role="alert">{errorMsg}</p>
+            )}
+
             <div className="flex justify-end gap-3">
               <DialogClose asChild>
                 <Button type="button" variant="secondary" size="md" disabled={submitting}>
@@ -199,8 +213,11 @@ function DecisionForm({
                 type="button"
                 variant="danger"
                 size="md"
-                disabled={submitting || rejectReason.trim() === ""}
-                onClick={() => decide("reject", rejectReason)}
+                disabled={submitting}
+                onClick={() => {
+                  if (!rejectReason.trim()) { setErrorMsg("Ret gerekçesi gerekli"); return; }
+                  decide("reject", rejectReason);
+                }}
               >
                 {submitting ? "Gönderiliyor…" : "Reddet"}
               </Button>

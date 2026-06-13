@@ -27,6 +27,9 @@ export function ReplyForm({
 
     const fd = new FormData(formRef.current);
 
+    const body = ((fd.get("body") as string) ?? "").trim();
+    if (!body) { setErrorMsg("Cevap gerekli"); setSubmitting(false); return; }
+
     try {
       await apiSend(`/api/requests/${requestId}/reply`, "POST", fd);
       formRef.current.reset();
