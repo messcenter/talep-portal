@@ -13,12 +13,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { isTerminal, type RequestStatus } from "../../domain/status";
-
-const inputClass =
-  "block w-full rounded border border-border-subtle bg-white px-3 py-2 text-sm text-on-surface " +
-  "placeholder:text-on-surface-variant/50 " +
-  "focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary " +
-  "disabled:opacity-50 disabled:bg-surface-tonal";
+import { MarkdownEditor } from "./MarkdownEditor";
 
 const fileInputClass =
   "block w-full text-sm text-on-surface-variant " +
@@ -77,13 +72,11 @@ function ClarificationForm({
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
         <div className="mb-3">
-          <textarea
+          <MarkdownEditor
             name="body"
             required
-            rows={3}
+            maxLength={5000}
             placeholder="Netleştirme sorusu…"
-            className={inputClass + " resize-y"}
-            disabled={submitting}
           />
         </div>
 
@@ -184,15 +177,16 @@ function DecisionForm({
             <label className="block text-sm font-medium text-on-surface mb-1">
               Ret gerekçesi
             </label>
-            <textarea
-              rows={4}
-              required
-              placeholder="Ret gerekçesi…"
-              className={inputClass + " resize-y mb-4"}
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              disabled={submitting}
-            />
+            <div className="mb-4">
+              <MarkdownEditor
+                value={rejectReason}
+                onChange={setRejectReason}
+                required
+                maxLength={2000}
+                height={160}
+                placeholder="Ret gerekçesi…"
+              />
+            </div>
 
             <div className="flex justify-end gap-3">
               <DialogClose asChild>

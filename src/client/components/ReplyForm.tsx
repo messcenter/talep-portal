@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { apiSend } from "../api";
 import { Button } from "../../components/ui/button";
-import { inputClass, fileInputClass, fileAccept } from "./forms";
+import { fileInputClass, fileAccept } from "./forms";
+import { MarkdownEditor } from "./MarkdownEditor";
 
 // ---- Reply form (requester only, status === "clarifying") ----
 
@@ -58,13 +59,11 @@ export function ReplyForm({
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
         <div className="mb-3">
-          <textarea
+          <MarkdownEditor
             name="body"
             required
-            rows={4}
+            maxLength={5000}
             placeholder="Cevabınızı buraya yazın…"
-            className={inputClass + " resize-y"}
-            disabled={submitting}
           />
         </div>
 

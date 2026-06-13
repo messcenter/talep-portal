@@ -8,6 +8,7 @@ import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { inputClass } from "../components/forms";
 import { FileDropField } from "../components/FileDropField";
+import { MarkdownEditor } from "../components/MarkdownEditor";
 
 type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
 
@@ -262,15 +263,11 @@ export function NewRequest() {
               <FieldLabel htmlFor="description" required>
                 Açıklama
               </FieldLabel>
-              <textarea
-                id="description"
+              <MarkdownEditor
                 name="description"
                 required
                 maxLength={5000}
-                rows={5}
                 placeholder="Talebi ayrıntılı olarak açıklayın."
-                className={inputClass + " resize-y"}
-                disabled={submitting}
               />
             </div>
 
@@ -278,15 +275,11 @@ export function NewRequest() {
               <FieldLabel htmlFor="expected_benefit" required>
                 Beklenen Fayda
               </FieldLabel>
-              <textarea
-                id="expected_benefit"
+              <MarkdownEditor
                 name="expected_benefit"
                 required
                 maxLength={2000}
-                rows={3}
                 placeholder="Bu talep hayata geçirilirse ne kazanırız?"
-                className={inputClass + " resize-y"}
-                disabled={submitting}
               />
             </div>
 
