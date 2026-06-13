@@ -31,6 +31,7 @@ Bun.serve({
     "/yeni": spaShell,
     "/my": spaShell,
     "/admin": spaShell,
+    "/admin/tanimlar": spaShell,
     // NOTE: /requests/:id is a single-segment param route — it will NOT match
     // /requests/:id/attachments/:attId (3 extra segments), so attachments fall
     // through to the fetch handler correctly.
