@@ -6,3 +6,21 @@
   html { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
   body { @apply bg-surface text-on-surface; }
 }
+
+.md-view { font-size: 0.875rem; line-height: 1.5; color: #191c1f; }
+.md-view > :first-child { margin-top: 0; }
+.md-view > :last-child { margin-bottom: 0; }
+.md-view p { margin: 0 0 0.75rem; }
+.md-view h1, .md-view h2, .md-view h3 { font-weight: 600; margin: 1rem 0 0.5rem; line-height: 1.25; }
+.md-view h1 { font-size: 1.125rem; } .md-view h2 { font-size: 1.05rem; } .md-view h3 { font-size: 1rem; }
+.md-view ul, .md-view ol { margin: 0 0 0.75rem; padding-left: 1.25rem; }
+.md-view ul { list-style: disc; } .md-view ol { list-style: decimal; }
+.md-view li { margin: 0.125rem 0; }
+.md-view a { color: #0F4C81; text-decoration: underline; }
+.md-view code { background: #ededf3; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
+.md-view pre { background: #ededf3; padding: 0.75rem; border-radius: 6px; overflow-x: auto; margin: 0 0 0.75rem; }
+.md-view pre code { background: none; padding: 0; }
+.md-view blockquote { border-left: 3px solid #c2c7d1; padding-left: 0.75rem; color: #42474f; margin: 0 0 0.75rem; }
+.md-view img { max-width: 100%; height: auto; border-radius: 6px; }
+.md-view table { border-collapse: collapse; margin: 0 0 0.75rem; }
+.md-view th, .md-view td { border: 1px solid #E2E8F0; padding: 0.35rem 0.6rem; }

@@ -1,6 +1,7 @@
 // src/client/components/Thread.tsx
 // Renders the clarification Q&A thread between admin and requester.
 import { Attachments, type AttachmentRow } from "./Attachments";
+import { MarkdownView } from "./MarkdownView";
 
 export interface MessageRow {
   id: number;
@@ -62,13 +63,13 @@ export function Thread({
             {/* Message bubble */}
             <div
               className={[
-                "rounded border p-3 text-sm whitespace-pre-wrap",
+                "rounded border p-3 text-sm",
                 isAdmin
                   ? "bg-surface-tonal border-border-subtle text-on-surface"
                   : "bg-primary/5 border-primary/20 text-on-surface",
               ].join(" ")}
             >
-              {msg.body}
+              <MarkdownView source={msg.body} />
             </div>
 
             {/* Message attachments */}

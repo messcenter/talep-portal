@@ -1,6 +1,7 @@
 import { Card } from "../../components/ui/card";
 import { StatusBadge } from "./StatusBadge";
 import { Attachments, type AttachmentRow } from "./Attachments";
+import { MarkdownView } from "./MarkdownView";
 import { PRIORITY_LABEL } from "../labels";
 import type { RequestRow } from "./RequestCard";
 
@@ -22,11 +23,11 @@ export function RequestMeta({ req, requestAtts }: { req: RequestRow; requestAtts
       </div>
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">Açıklama</p>
-        <p className="text-sm text-on-surface whitespace-pre-wrap">{req.description}</p>
+        <MarkdownView source={req.description} />
       </div>
       <div className="mb-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">Beklenen Fayda</p>
-        <p className="text-sm text-on-surface whitespace-pre-wrap">{req.expected_benefit}</p>
+        <MarkdownView source={req.expected_benefit} />
       </div>
       {requestAtts.length > 0 && <Attachments requestId={req.id} attachments={requestAtts} />}
     </Card>
