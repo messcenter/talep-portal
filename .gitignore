@@ -8,3 +8,4 @@ uploads/
 dist/
 public/
 .playwright-mcp/
+.superpowers/
