@@ -1,0 +1,32 @@
+# Talep Portalı — single service: the Bun server with built-in SQLite + static SPA.
+#
+#   1. cp .env.example .env   ve değerleri doldur (Google OAuth, Zoho SMTP, vb.)
+#   2. docker compose up -d --build
+#   3. http://localhost:${PORT}  (OAuth callback: ${APP_BASE_URL}/auth/google/callback)
+#
+# Kalıcı durum (data.db + uploads) "talep-data" adlı volume'da tutulur; konteyner
+# silinse bile korunur. Yedek = bu volume'u kopyala.
+
+services:
+  app:
+    build: .
+    image: talep-portal:latest
+    container_name: talep-portal
+    restart: unless-stopped
+
+    # All secrets/config come from .env at runtime (not baked into the image).
+    env_file: .env
+    # Force persistent state into the mounted volume, overriding any .env values.
+    environment:
+      DB_PATH: /data/data.db
+      UPLOAD_DIR: /data/uploads
+
+    # Host port = container port = configured PORT (defaults to 3000).
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+
+    volumes:
+      - talep-data:/data
+
+volumes:
+  talep-data:

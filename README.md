@@ -59,6 +59,17 @@ bun run dev                 # geliştirme (hot reload, http://localhost:3000)
 bun run start               # build + serve
 ```
 
+### Docker ile çalıştırma
+
+```bash
+cp .env.example .env        # değerleri doldur
+docker compose up -d --build
+```
+
+Tek servis ayağa kalkar; kalıcı durum (`data.db` + `uploads/`) `talep-data` adlı
+volume'da tutulur (konteyner silinse de kalır). Host portu `.env`'deki `PORT`
+değerinden gelir. Yedek = bu volume'u kopyala.
+
 ### Google OAuth kurulumu
 
 Google Cloud Console → **OAuth 2.0 Client ID** oluştur ve yetkili yönlendirme

@@ -1,0 +1,25 @@
+# Keep the build context small and never ship secrets or local state.
+node_modules
+.git
+.gitignore
+
+# Secrets — provided at runtime via compose env_file, never baked into the image.
+.env
+.env.*
+
+# Local persistent state — lives in the mounted /data volume, not the image.
+data.db
+data.db-wal
+data.db-shm
+uploads
+
+# Rebuilt inside the image by `bun run build`.
+public
+
+# Dev/agent tooling and docs — not needed at build or runtime.
+.superpowers
+.claude
+docs
+Dockerfile
+.dockerignore
+docker-compose.yml
