@@ -209,12 +209,10 @@ export function RequestDetail() {
     }
   }
 
-  // canReply mirrors src/domain/authz.ts canReply:
-  //   !isAdmin && email matches && status === "clarifying"
-  const canReply =
-    !user.isAdmin &&
-    user.email.toLowerCase() === req.requester_email.toLowerCase() &&
-    req.status === "clarifying";
+  const isOwner =
+    user.email.toLowerCase() === req.requester_email.toLowerCase();
+  // The owner (even if also an admin) replies while clarifying.
+  const canReply = isOwner && req.status === "clarifying";
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-6">
@@ -286,12 +284,14 @@ export function RequestDetail() {
           requestId={req.id}
         />
 
-        {/* B4: admin controls — clarification form + accept/reject decision */}
-        {user.isAdmin && (
+        {/* B4: admin controls — clarification form + accept/reject decision.
+            Only for an admin acting on someone ELSE's request; an admin viewing
+            their own request replies instead. */}
+        {user.isAdmin && !isOwner && (
           <AdminControls requestId={req.id} status={req.status} onDone={load} />
         )}
 
-        {/* Reply form — requester only, status === "clarifying" */}
+        {/* Reply form — owner (incl. admin-owner), status === "clarifying" */}
         {canReply && (
           <>
             <div className="border-t border-border-subtle mt-6" />
