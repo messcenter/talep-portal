@@ -24,3 +24,19 @@
 .md-view img { max-width: 100%; height: auto; border-radius: 6px; }
 .md-view table { border-collapse: collapse; margin: 0 0 0.75rem; }
 .md-view th, .md-view td { border: 1px solid #E2E8F0; padding: 0.35rem 0.6rem; }
+
+.tiptap { min-height: 8rem; max-height: 24rem; overflow-y: auto; padding: 0.75rem; font-size: 0.875rem; line-height: 1.5; color: #191c1f; }
+.tiptap:focus { outline: none; }
+.tiptap p { margin: 0 0 0.5rem; }
+.tiptap p:last-child { margin-bottom: 0; }
+.tiptap strong { font-weight: 700; }
+.tiptap em { font-style: italic; }
+.tiptap h2 { font-size: 1.05rem; font-weight: 600; margin: 0.75rem 0 0.4rem; }
+.tiptap h3 { font-size: 1rem; font-weight: 600; margin: 0.6rem 0 0.3rem; }
+.tiptap ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 0.5rem; }
+.tiptap ol { list-style: decimal; padding-left: 1.25rem; margin: 0 0 0.5rem; }
+.tiptap blockquote { border-left: 3px solid #c2c7d1; padding-left: 0.75rem; color: #42474f; margin: 0 0 0.5rem; }
+.tiptap code { background: #ededf3; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
+.tiptap img { max-width: 100%; height: auto; border-radius: 6px; }
+.tiptap a { color: #0F4C81; text-decoration: underline; }
+.tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: #727780; float: left; height: 0; pointer-events: none; }
