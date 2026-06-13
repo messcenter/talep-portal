@@ -36,6 +36,8 @@ Bun.serve({
     // /requests/:id/attachments/:attId (3 extra segments), so attachments fall
     // through to the fetch handler correctly.
     "/requests/:id": spaShell,
+    // Admin detail deep-link; different prefix from /requests/:id/attachments/...
+    "/admin/requests/:id": spaShell,
 
     // Pre-built client bundle and compiled CSS.
     "/client.js": clientJs,

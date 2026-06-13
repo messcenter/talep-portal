@@ -12,7 +12,7 @@ export const UserContext = createContext<User | null>(null);
 
 /**
  * Returns the current user. Throws if called outside a UserContext provider
- * (which means AppLayout hasn't loaded yet — should not happen in practice).
+ * (which means AuthGate hasn't loaded yet — should not happen in practice).
  */
 export function useUser(): User {
   const user = useContext(UserContext);
