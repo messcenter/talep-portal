@@ -3,7 +3,7 @@
 // surfaces the chosen File[] via value/onChange. The native FileList cannot be
 // set programmatically, so the parent must read `value` and append to FormData
 // on submit (the native input is intentionally not form-associated).
-import { useRef } from "react";
+import { useRef, useId } from "react";
 import { fileAccept } from "./forms";
 
 export function formatBytes(n: number): string {
@@ -14,14 +14,18 @@ export function formatBytes(n: number): string {
 }
 
 export function FilePicker({
+  id,
   value,
   onChange,
   disabled,
 }: {
+  id?: string;
   value: File[];
   onChange: (files: File[]) => void;
   disabled?: boolean;
 }) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
   const inputRef = useRef<HTMLInputElement>(null);
 
   function addFiles(list: FileList | null) {
@@ -41,12 +45,12 @@ export function FilePicker({
         multiple
         accept={fileAccept}
         className="sr-only"
-        id="file-picker-input"
+        id={inputId}
         disabled={disabled}
         onChange={(e) => addFiles(e.target.files)}
       />
       <label
-        htmlFor="file-picker-input"
+        htmlFor={inputId}
         className={
           "inline-flex items-center gap-2 rounded border border-border-subtle bg-surface-tonal " +
           "px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant " +

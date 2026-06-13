@@ -1,4 +1,4 @@
-// src/server/routes/definitions.ts — GET /api/departments + admin CRUD for departments/modules.
+// src/server/routes/definitions.ts — GET /api/departments + /api/applications + admin CRUD for departments/modules/applications.
 import type { User } from "../../domain/authz";
 import { json } from "../handler";
 import type { Deps } from "../handler";

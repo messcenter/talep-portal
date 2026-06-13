@@ -96,6 +96,7 @@ export function NewRequest() {
     const get = (k: string) => ((fd.get(k) as string) ?? "").trim();
     const errs: Record<string, string> = {};
     if (!dept) errs.department = "Departman seçiniz";
+    if (!app) errs.application = "Uygulama seçiniz";
     if (!get("request_type")) errs.request_type = "Talep türü seçiniz";
     if (!get("priority")) errs.priority = "Öncelik seçiniz";
     if (!get("title")) errs.title = "Başlık gerekli";
@@ -206,6 +207,7 @@ export function NewRequest() {
                   onChange={(e) => setApp(e.target.value)}
                   className={inputClass}
                   disabled={submitting}
+                  aria-invalid={!!fieldErrors.application}
                 >
                   <option value="">Seçiniz…</option>
                   {apps?.map((a) => (
@@ -214,6 +216,7 @@ export function NewRequest() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.application && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.application}</p>}
               </div>
             </div>
 
@@ -335,8 +338,8 @@ export function NewRequest() {
 
           {/* Row 7: File Attachments (optional) */}
           <div className="mb-6">
-            <FieldLabel htmlFor="file-picker-input">Ekler</FieldLabel>
-            <FilePicker value={files} onChange={setFiles} disabled={submitting} />
+            <FieldLabel htmlFor="new-request-files">Ekler</FieldLabel>
+            <FilePicker id="new-request-files" value={files} onChange={setFiles} disabled={submitting} />
             <p className="text-xs text-on-surface-variant mt-1">
               PNG, JPEG, WebP, GIF veya PDF · Birden fazla dosya seçilebilir
             </p>

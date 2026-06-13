@@ -209,7 +209,7 @@ function DefinitionsInner() {
         </div>
       </Card>
 
-      {!depts && !error && <p className="text-on-surface-variant">Yükleniyor…</p>}
+      {(!depts || !apps) && !error && <p className="text-on-surface-variant">Yükleniyor…</p>}
       {depts && depts.length === 0 && (
         <p className="text-on-surface-variant">Henüz departman tanımlanmamış.</p>
       )}
@@ -273,7 +273,7 @@ function DeptCard({
             {m.name}
             <button
               type="button"
-              className="text-danger font-bold leading-none"
+              className="text-danger font-bold leading-none px-1"
               aria-label={`${m.name} sil`}
               onClick={() => onDelModule(d.name, m)}
             >
