@@ -5,27 +5,11 @@ import { Navigate, Link } from "react-router-dom";
 import { apiGet } from "../api";
 import { useUser } from "../auth";
 import { statusLabelTr, type RequestStatus } from "../../domain/status";
+import type { DashboardStats, Priority } from "../../domain/stats";
+import { PRIORITIES } from "../../domain/validation";
 import { PRIORITY_LABEL } from "../labels";
 import { StatusBadge } from "../components/StatusBadge";
-
-type Priority = "low" | "medium" | "high";
-
-type AgedItem = {
-  id: number;
-  request_no: string;
-  title: string;
-  status: RequestStatus;
-  age_days: number;
-};
-
-type DashboardStats = {
-  total: number;
-  open: number;
-  agedCount: number;
-  byStatus: Record<RequestStatus, number>;
-  openByPriority: Record<Priority, number>;
-  aged: AgedItem[];
-};
+import { Spinner } from "../components/Spinner";
 
 const STATUS_ORDER: RequestStatus[] = ["new", "clarifying", "answered", "accepted", "rejected"];
 const STATUS_BAR: Record<RequestStatus, string> = {
@@ -36,24 +20,12 @@ const STATUS_BAR: Record<RequestStatus, string> = {
   rejected: "bg-status-ret",
 };
 
-const PRIORITY_ORDER: Priority[] = ["high", "medium", "low"];
+const PRIORITY_ORDER: Priority[] = [...PRIORITIES].reverse(); // ["high","medium","low"]
 const PRIORITY_BAR: Record<Priority, string> = {
   high: "bg-danger",
   medium: "bg-status-netlestiriliyor",
   low: "bg-on-surface-variant",
 };
-
-function Spinner() {
-  return (
-    <div className="flex items-center justify-center py-16">
-      <div
-        className="w-7 h-7 rounded-full border-2 border-border-subtle border-t-primary animate-spin"
-        role="status"
-        aria-label="Yükleniyor"
-      />
-    </div>
-  );
-}
 
 function NumCard({ n, label, alert = false }: { n: number; label: string; alert?: boolean }) {
   return (
@@ -82,7 +54,14 @@ function Bar({ label, value, max, color }: { label: string; value: number; max: 
   return (
     <div className="my-1.5 flex items-center gap-3">
       <span className="w-32 shrink-0 text-sm text-on-surface">{label}</span>
-      <span className="h-3.5 flex-1 overflow-hidden rounded bg-surface-container">
+      <span
+        className="h-3.5 flex-1 overflow-hidden rounded bg-surface-container"
+        role="meter"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-label={label}
+      >
         <span className={`block h-full rounded ${color}`} style={{ width: `${pct}%` }} />
       </span>
       <span className="w-7 text-right text-sm font-semibold tabular-nums text-on-surface">{value}</span>
@@ -109,6 +88,9 @@ function DashboardInner() {
       });
     return () => { cancelled = true; };
   }, []);
+
+  const statusMax = stats ? Math.max(1, ...STATUS_ORDER.map((x) => stats.byStatus[x])) : 1;
+  const priorityMax = stats ? Math.max(1, ...PRIORITY_ORDER.map((x) => stats.openByPriority[x])) : 1;
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
@@ -137,7 +119,7 @@ function DashboardInner() {
                   key={s}
                   label={statusLabelTr(s)}
                   value={stats.byStatus[s]}
-                  max={Math.max(1, ...STATUS_ORDER.map((x) => stats.byStatus[x]))}
+                  max={statusMax}
                   color={STATUS_BAR[s]}
                 />
               ))}
@@ -148,7 +130,7 @@ function DashboardInner() {
                   key={p}
                   label={PRIORITY_LABEL[p]}
                   value={stats.openByPriority[p]}
-                  max={Math.max(1, ...PRIORITY_ORDER.map((x) => stats.openByPriority[x]))}
+                  max={priorityMax}
                   color={PRIORITY_BAR[p]}
                 />
               ))}
