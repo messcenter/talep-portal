@@ -66,7 +66,9 @@ export function RichTextEditor(props: Controlled | Uncontrolled) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      // StarterKit v3 bundles its own Link; disable it so our explicit config wins
+      // (avoids the "Duplicate extension names: ['link']" warning).
+      StarterKit.configure({ link: false }),
       Link.configure({ openOnClick: false, autolink: true, protocols: ["http", "https"] }),
       Image,
       Placeholder.configure({ placeholder: props.placeholder ?? "Yazın…" }),
