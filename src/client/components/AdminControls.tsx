@@ -14,13 +14,7 @@ import {
 } from "../../components/ui/dialog";
 import { isTerminal, type RequestStatus } from "../../domain/status";
 import { RichTextEditor } from "./RichTextEditor";
-
-const fileInputClass =
-  "block w-full text-sm text-on-surface-variant " +
-  "file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:border-border-subtle " +
-  "file:text-xs file:font-semibold file:uppercase file:tracking-wide " +
-  "file:text-on-surface-variant file:bg-surface-tonal file:cursor-pointer " +
-  "hover:file:bg-surface-container disabled:opacity-50";
+import { FilePicker } from "./FilePicker";
 
 // ---- Clarification message form ----
 
@@ -35,6 +29,7 @@ function ClarificationForm({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,6 +39,7 @@ function ClarificationForm({
     setErrorMsg(null);
 
     const fd = new FormData(formRef.current);
+    for (const f of files) fd.append("files", f);
 
     const body = ((fd.get("body") as string) ?? "").trim();
     if (!body) { setErrorMsg("Soru gerekli"); setSubmitting(false); return; }
@@ -51,6 +47,7 @@ function ClarificationForm({
     try {
       await apiSend(`/api/admin/requests/${requestId}/message`, "POST", fd);
       formRef.current.reset();
+      setFiles([]);
       setEditorKey((k) => k + 1);
       onDone();
     } catch (err) {
@@ -88,14 +85,7 @@ function ClarificationForm({
         </div>
 
         <div className="mb-4">
-          <input
-            name="files"
-            type="file"
-            multiple
-            accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
-            className={fileInputClass}
-            disabled={submitting}
-          />
+          <FilePicker value={files} onChange={setFiles} disabled={submitting} />
           <p className="text-xs text-on-surface-variant mt-1">
             PNG, JPEG, WebP, GIF veya PDF · İsteğe bağlı
           </p>
