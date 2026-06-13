@@ -1,5 +1,6 @@
 // src/domain/stats.ts — pure dashboard aggregation (zero I/O).
 import { isTerminal, type RequestStatus } from "./status";
+import { PRIORITIES } from "./validation";
 
 export const AGED_THRESHOLD_DAYS = 7;
 
@@ -27,7 +28,7 @@ export type AgedItem = {
   age_days: number;
 };
 
-export type Priority = "low" | "medium" | "high";
+export type Priority = (typeof PRIORITIES)[number];
 
 export type DashboardStats = {
   total: number;
@@ -37,8 +38,6 @@ export type DashboardStats = {
   openByPriority: Record<Priority, number>;
   aged: AgedItem[];
 };
-
-const PRIORITIES: readonly Priority[] = ["low", "medium", "high"];
 
 function isPriority(p: string): p is Priority {
   return (PRIORITIES as readonly string[]).includes(p);
