@@ -29,6 +29,9 @@ export function AdminLayout() {
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1">
           <NavLink to="/admin" end className={sideLink}>
+            Özet
+          </NavLink>
+          <NavLink to="/admin/talepler" className={sideLink}>
             Tüm Talepler
           </NavLink>
           <NavLink to="/admin/tanimlar" className={sideLink}>

@@ -30,6 +30,9 @@ const RequestDetailAdmin = lazy(() =>
 const Admin = lazy(() =>
   import("./pages/Admin").then((m) => ({ default: m.Admin })),
 );
+const Dashboard = lazy(() =>
+  import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
+);
 const Definitions = lazy(() =>
   import("./pages/Definitions").then((m) => ({ default: m.Definitions })),
 );
@@ -52,7 +55,8 @@ export function App() {
             <Route path="/requests/:id" element={<RequestDetailEmployee />} />
           </Route>
           <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={<Dashboard />} />
+            <Route path="/admin/talepler" element={<Admin />} />
             <Route path="/admin/tanimlar" element={<Definitions />} />
             <Route path="/admin/requests/:id" element={<RequestDetailAdmin />} />
           </Route>
