@@ -50,6 +50,7 @@ export function NewRequest() {
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Managed department/module lists (DM5). Controlled selects.
   const [depts, setDepts] = useState<Dept[] | null>(null);
@@ -72,12 +73,27 @@ export function NewRequest() {
 
     setSubmitting(true);
     setErrorMsg(null);
+    setFieldErrors({});
 
     const fd = new FormData(formRef.current);
     // Department/module are controlled state (not uncontrolled DOM inputs);
     // set them explicitly so the submitted field names/values are guaranteed.
     fd.set("department", dept);
     fd.set("module_area", moduleName);
+
+    const get = (k: string) => ((fd.get(k) as string) ?? "").trim();
+    const errs: Record<string, string> = {};
+    if (!dept) errs.department = "Departman seçiniz";
+    if (!get("request_type")) errs.request_type = "Talep türü seçiniz";
+    if (!get("priority")) errs.priority = "Öncelik seçiniz";
+    if (!get("title")) errs.title = "Başlık gerekli";
+    if (!get("description")) errs.description = "Açıklama gerekli";
+    if (!get("expected_benefit")) errs.expected_benefit = "Beklenen fayda gerekli";
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const result = await apiSend<{ id: number }>("/api/requests", "POST", fd);
@@ -148,6 +164,7 @@ export function NewRequest() {
                   }}
                   className={inputClass}
                   disabled={submitting}
+                  aria-invalid={!!fieldErrors.department}
                 >
                   <option value="">Seçiniz…</option>
                   {depts.map((d) => (
@@ -156,6 +173,7 @@ export function NewRequest() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.department && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.department}</p>}
               </div>
               <div>
                 <FieldLabel htmlFor="application" required>
@@ -212,12 +230,14 @@ export function NewRequest() {
                   required
                   className={inputClass}
                   disabled={submitting}
+                  aria-invalid={!!fieldErrors.request_type}
                 >
                   <option value="">Seçiniz…</option>
                   <option value="feature">Yeni Özellik</option>
                   <option value="bug">Hata</option>
                   <option value="task">Görev</option>
                 </select>
+                {fieldErrors.request_type && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.request_type}</p>}
               </div>
               <div>
                 <FieldLabel htmlFor="priority" required>
@@ -229,12 +249,14 @@ export function NewRequest() {
                   required
                   className={inputClass}
                   disabled={submitting}
+                  aria-invalid={!!fieldErrors.priority}
                 >
                   <option value="">Seçiniz…</option>
                   <option value="low">Düşük</option>
                   <option value="medium">Orta</option>
                   <option value="high">Yüksek</option>
                 </select>
+                {fieldErrors.priority && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.priority}</p>}
               </div>
             </div>
           </section>
@@ -256,7 +278,9 @@ export function NewRequest() {
                 placeholder="Talebi özetleyen kısa bir başlık"
                 className={inputClass}
                 disabled={submitting}
+                aria-invalid={!!fieldErrors.title}
               />
+              {fieldErrors.title && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.title}</p>}
             </div>
 
             <div className="mb-4">
@@ -269,6 +293,7 @@ export function NewRequest() {
                 maxLength={5000}
                 placeholder="Talebi ayrıntılı olarak açıklayın."
               />
+              {fieldErrors.description && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.description}</p>}
             </div>
 
             <div className="mb-4">
@@ -281,6 +306,7 @@ export function NewRequest() {
                 maxLength={2000}
                 placeholder="Bu talep hayata geçirilirse ne kazanırız?"
               />
+              {fieldErrors.expected_benefit && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.expected_benefit}</p>}
             </div>
 
             <div>
