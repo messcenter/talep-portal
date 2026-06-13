@@ -8,8 +8,9 @@
     "build:html": "cp src/client/index.html public/index.html",
     "build": "bun run build:css && bun run build:client && bun run build:html",
     "dev:css": "bunx tailwindcss -i src/styles/app.css -o public/app.css --watch",
+    "dev:client": "bun build src/client/main.tsx --outfile public/client.js --target browser --format esm --watch",
     "dev:server": "bun --hot src/index.ts",
-    "dev": "bun run build && (trap 'kill 0' EXIT; bun run dev:css & bun run dev:server)",
+    "dev": "bun run build && (trap 'kill 0' EXIT; bun run dev:css & bun run dev:client & bun run dev:server)",
     "start": "bun run build && bun src/index.ts",
     "seed:definitions": "bun run scripts/seed-definitions.ts",
     "test": "bun test"
