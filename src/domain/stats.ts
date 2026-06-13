@@ -51,7 +51,7 @@ export function buildDashboardStats(rows: StatsRow[], nowIso: string): Dashboard
   const aged: AgedItem[] = [];
 
   for (const r of rows) {
-    byStatus[r.status]++;
+    if (r.status in byStatus) byStatus[r.status]++;
     if (isTerminal(r.status)) continue;
     if (isPriority(r.priority)) openByPriority[r.priority]++;
     const age = ageInDays(r.last_activity_at, nowIso);

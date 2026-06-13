@@ -130,6 +130,29 @@ describe("GET /api/admin/stats", () => {
     expect(Array.isArray(body.aged)).toBe(true);
   });
 
+  test("stale open request surfaces in aged list with correct shape", async () => {
+    // Created old AND last message is 31 days before `now` → aged.
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "Bekleyen talep", description: "x",
+        expected_benefit: "y", priority: "high" },
+      "2025-11-01T00:00:00.000Z",
+    );
+    repo.addMessageAndTransition(r.id, { role: "admin", body: "cevap" }, "clarifying", "2025-12-01T00:00:00.000Z");
+
+    const res = await handler(new Request("http://x/api/admin/stats", {
+      headers: { cookie: adminCookie() },
+    }));
+    const body = await res.json() as any;
+    expect(body.agedCount).toBe(1);
+    expect(body.aged).toHaveLength(1);
+    expect(body.aged[0].id).toBe(r.id);
+    expect(body.aged[0].request_no).toBe(r.request_no);
+    expect(body.aged[0].status).toBe("clarifying");
+    expect(body.aged[0].age_days).toBe(31);
+  });
+
   test("last_activity follows latest message, not created_at", async () => {
     const r = repo.createRequest(
       { requester_name: "A", requester_email: "a@kokilmetal.com.tr",

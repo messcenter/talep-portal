@@ -98,4 +98,10 @@ describe("buildDashboardStats", () => {
     );
     expect(s.aged.map((a) => a.id)).toEqual([3, 1, 2]);
   });
+
+  test("unknown status value does not poison known status counts", () => {
+    const s = buildDashboardStats([row({ status: "weird" as any })], NOW);
+    expect(s.total).toBe(1);
+    expect(s.byStatus).toEqual({ new: 0, clarifying: 0, answered: 0, accepted: 0, rejected: 0 });
+  });
 });
