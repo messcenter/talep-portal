@@ -62,6 +62,15 @@ export function RequestDetailAdmin() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-6">
+      <div className="flex justify-end mb-3">
+        <a
+          href={`/api/admin/requests/${req.id}/export.md`}
+          download
+          className="inline-flex items-center gap-1.5 rounded border border-border-subtle bg-white px-3 py-1.5 text-sm font-medium text-on-surface hover:bg-surface-tonal transition-colors no-underline"
+        >
+          ⬇ Markdown indir
+        </a>
+      </div>
       <RequestMeta req={req} requestAtts={requestAtts} />
       <Card className="p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-on-surface-variant mb-4">
