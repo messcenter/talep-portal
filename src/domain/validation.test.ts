@@ -56,3 +56,27 @@ describe("decisionSchema", () => {
     ).toBe(true);
   });
 });
+
+test("newRequestSchema: Türkçe alan mesajları", () => {
+  const r = newRequestSchema.safeParse({ department: "", application: "ERP", request_type: "", title: "", description: "x", expected_benefit: "y", priority: "" });
+  expect(r.success).toBe(false);
+  if (!r.success) {
+    const byPath = Object.fromEntries(r.error.issues.map((i) => [i.path.join("."), i.message]));
+    expect(byPath["department"]).toBe("Departman gerekli");
+    expect(byPath["title"]).toBe("Başlık gerekli");
+    expect(byPath["request_type"]).toBe("Talep türü seçiniz");
+    expect(byPath["priority"]).toBe("Öncelik seçiniz");
+  }
+});
+
+test("title max message Türkçe", () => {
+  const r = newRequestSchema.safeParse({ department: "D", application: "ERP", request_type: "bug", title: "x".repeat(201), description: "d", expected_benefit: "b", priority: "low" });
+  expect(r.success).toBe(false);
+  if (!r.success) expect(r.error.issues.find((i) => i.path[0] === "title")?.message).toBe("Başlık en fazla 200 karakter olabilir");
+});
+
+test("decision reject without reason Türkçe", () => {
+  const r = decisionSchema.safeParse({ decision: "reject" });
+  expect(r.success).toBe(false);
+  if (!r.success) expect(r.error.issues[0]?.message).toBe("Ret için gerekçe gerekli");
+});

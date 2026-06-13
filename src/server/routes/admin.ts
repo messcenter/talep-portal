@@ -68,7 +68,7 @@ export async function handleAdmin(
     const form = await parseForm(req);
     const parsed = messageSchema.safeParse(form);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+      const errors = parsed.error.issues.map((i) => i.message);
       return json({ errors }, 400, extraHeaders);
     }
     if (!canTransition(r.status, "clarifying")) {
@@ -110,7 +110,7 @@ export async function handleAdmin(
     const form = await parseForm(req);
     const parsed = decisionSchema.safeParse(form);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+      const errors = parsed.error.issues.map((i) => i.message);
       return json({ errors }, 400, extraHeaders);
     }
     const target = parsed.data.decision === "accept" ? "accepted" : "rejected";

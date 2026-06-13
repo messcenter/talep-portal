@@ -1,39 +1,34 @@
 // src/domain/validation.ts
 import { z } from "zod";
 
-const nonBlank = (max: number) =>
-  z.string().trim().min(1).max(max);
-
 export const REQUEST_TYPES = ["feature", "bug", "task"] as const;
 export const PRIORITIES = ["low", "medium", "high"] as const;
 
+const req = (max: number, label: string) =>
+  z.string().trim().min(1, `${label} gerekli`).max(max, `${label} en fazla ${max} karakter olabilir`);
+
 export const newRequestSchema = z.object({
-  department: nonBlank(120),
-  application: nonBlank(120),
-  module_area: z.string().trim().max(120).optional().default(""),
-  request_type: z.enum(REQUEST_TYPES),
-  title: nonBlank(200),
-  description: nonBlank(5000),
-  expected_benefit: nonBlank(2000),
-  priority: z.enum(PRIORITIES),
+  department: req(120, "Departman"),
+  application: req(120, "Uygulama"),
+  module_area: z.string().trim().max(120, "Modül/alan en fazla 120 karakter olabilir").optional().default(""),
+  request_type: z.enum(REQUEST_TYPES, { message: "Talep türü seçiniz" }),
+  title: req(200, "Başlık"),
+  description: req(5000, "Açıklama"),
+  expected_benefit: req(2000, "Beklenen fayda"),
+  priority: z.enum(PRIORITIES, { message: "Öncelik seçiniz" }),
 });
 export type NewRequestInput = z.infer<typeof newRequestSchema>;
 
-export const replySchema = z.object({
-  body: nonBlank(5000),
-});
-
-export const messageSchema = z.object({
-  body: nonBlank(5000),
-});
+export const replySchema = z.object({ body: req(5000, "Cevap") });
+export const messageSchema = z.object({ body: req(5000, "Soru") });
 
 export const decisionSchema = z
   .object({
-    decision: z.enum(["accept", "reject"]),
-    reason: z.string().trim().max(2000).optional(),
+    decision: z.enum(["accept", "reject"], { message: "Geçersiz karar" }),
+    reason: z.string().trim().max(2000, "Gerekçe en fazla 2000 karakter olabilir").optional(),
   })
   .refine((d) => d.decision !== "reject" || !!d.reason, {
-    message: "reject requires reason",
+    message: "Ret için gerekçe gerekli",
     path: ["reason"],
   });
 export type DecisionInput = z.infer<typeof decisionSchema>;

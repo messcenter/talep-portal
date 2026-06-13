@@ -45,7 +45,7 @@ export async function handleRequests(
     const form = await parseForm(req);
     const parsed = newRequestSchema.safeParse(form);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+      const errors = parsed.error.issues.map((i) => i.message);
       return json({ errors }, 400, extraHeaders);
     }
     // Strictness: department must be a managed one; module (if given) must belong to it.
@@ -108,7 +108,7 @@ export async function handleRequests(
     const form = await parseForm(req);
     const parsed = replySchema.safeParse(form);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+      const errors = parsed.error.issues.map((i) => i.message);
       return json({ errors }, 400, extraHeaders);
     }
     const up = await processUploads(collectFiles(form), deps.storage);
