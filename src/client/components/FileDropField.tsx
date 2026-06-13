@@ -75,7 +75,9 @@ export function FileDropField({
           e.preventDefault();
           if (!disabled) setDragging(true);
         }}
-        onDragLeave={() => setDragging(false)}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+        }}
         onDrop={onDrop}
       >
         <svg
