@@ -17,8 +17,8 @@ export function AdminLayout() {
   const user = useUser();
   if (!user.isAdmin) return <Navigate to="/my" replace />;
   return (
-    <div className="min-h-screen bg-surface flex">
-      <aside className="w-60 shrink-0 bg-surface-tonal border-r border-border-subtle flex flex-col">
+    <div className="min-h-screen bg-surface md:flex">
+      <aside className="w-full md:w-60 shrink-0 bg-surface-tonal border-b md:border-b-0 md:border-r border-border-subtle flex flex-col md:min-h-screen">
         <div className="px-4 h-14 flex items-center border-b border-border-subtle">
           <span className="font-semibold text-primary tracking-tight text-sm leading-tight">
             Talep Portalı
@@ -27,7 +27,7 @@ export function AdminLayout() {
             </span>
           </span>
         </div>
-        <nav className="flex-1 p-3 flex flex-col gap-1">
+        <nav className="flex-1 p-3 flex flex-row md:flex-col gap-1 items-center md:items-stretch flex-wrap">
           <NavLink to="/admin" end className={sideLink}>
             Özet
           </NavLink>
@@ -37,7 +37,7 @@ export function AdminLayout() {
           <NavLink to="/admin/tanimlar" className={sideLink}>
             Tanımlar
           </NavLink>
-          <div className="mt-auto pt-3 border-t border-border-subtle">
+          <div className="md:mt-auto md:pt-3 md:border-t border-border-subtle">
             <NavLink
               to="/my"
               className="block px-3 py-2 rounded text-sm text-secondary hover:bg-surface-container"
