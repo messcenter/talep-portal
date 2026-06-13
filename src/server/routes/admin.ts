@@ -7,6 +7,7 @@ import { json } from "../handler";
 import type { Deps } from "../handler";
 import { parseForm } from "./requests";
 import { questionRequester, decisionRequester } from "../../mail/templates";
+import { requestToMarkdown } from "../../domain/export";
 
 /**
  * Dispatcher for all /api/admin/* routes.
@@ -28,6 +29,27 @@ export async function handleAdmin(
     const status = url.searchParams.get("status") ?? undefined;
     const rows = deps.repo.listAll({ status });
     return json(rows, 200, extraHeaders);
+  }
+
+  // GET /api/admin/requests/:id/export.md
+  const exportMatch = path.match(/^\/api\/admin\/requests\/(\d+)\/export\.md$/);
+  if (exportMatch && method === "GET") {
+    if (!user.isAdmin) return json({ error: "Yetkisiz" }, 403, extraHeaders);
+    const id = Number(exportMatch[1]);
+    if (!Number.isInteger(id)) return json({ error: "not found" }, 404, extraHeaders);
+    const r = deps.repo.getRequest(id);
+    if (!r) return json({ error: "not found" }, 404, extraHeaders);
+    const md = requestToMarkdown({
+      request: r,
+      messages: deps.repo.listMessages(r.id),
+      attachments: deps.repo.listAttachmentsByRequest(r.id),
+    });
+    const headers = new Headers({
+      ...extraHeaders,
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${r.request_no}.md"`,
+    });
+    return new Response(md, { status: 200, headers });
   }
 
   // POST /api/admin/requests/:id/message

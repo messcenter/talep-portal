@@ -415,3 +415,35 @@ describe("POST /api/admin/requests/:id/decision", () => {
     expect(sent.some((m) => m.to === "a@kokilmetal.com.tr")).toBe(true);
   });
 });
+
+// ─── GET /api/admin/requests/:id/export.md ───────────────────────────────────
+
+describe("GET /api/admin/requests/:id/export.md", () => {
+  test("admin → 200 markdown with attachment filename and title", async () => {
+    const r = seedRequest("a@kokilmetal.com.tr");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/export.md`, {
+      headers: { cookie: adminCookie() },
+    }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(res.headers.get("content-disposition")).toBe(`attachment; filename="${r.request_no}.md"`);
+    const body = await res.text();
+    expect(body).toContain(`# ${r.request_no} · My Title`);
+    expect(body).toContain("## Yazışma");
+  });
+
+  test("non-admin → 403", async () => {
+    const r = seedRequest("a@kokilmetal.com.tr");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/export.md`, {
+      headers: { cookie: userCookie() },
+    }));
+    expect(res.status).toBe(403);
+  });
+
+  test("unknown id → 404", async () => {
+    const res = await handler(new Request("http://x/api/admin/requests/9999/export.md", {
+      headers: { cookie: adminCookie() },
+    }));
+    expect(res.status).toBe(404);
+  });
+});
