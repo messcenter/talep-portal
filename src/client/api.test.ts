@@ -63,12 +63,12 @@ describe("apiGet", () => {
     await expect(apiGet("/api/fail")).rejects.toThrow("500");
   });
 
-  it("redirects to /auth/google on 401", async () => {
+  it("redirects to /login on 401", async () => {
     const win = stubGlobals();
     globalThis.fetch = mock(() => Promise.resolve(makeResponse(401))) as any;
     const { apiGet } = await import("./api");
     try { await apiGet("/api/me"); } catch { /* expected */ }
-    expect(win.location.href).toBe("/auth/google");
+    expect(win.location.href).toBe("/login");
   });
 });
 
@@ -162,11 +162,11 @@ describe("apiSend", () => {
     await expect(apiSend("/api/requests", "POST")).rejects.toThrow();
   });
 
-  it("redirects to /auth/google on 401", async () => {
+  it("redirects to /login on 401", async () => {
     const win = stubGlobals();
     globalThis.fetch = mock(() => Promise.resolve(makeResponse(401))) as any;
     const { apiSend } = await import("./api");
     try { await apiSend("/api/requests", "POST"); } catch { /* expected */ }
-    expect(win.location.href).toBe("/auth/google");
+    expect(win.location.href).toBe("/login");
   });
 });

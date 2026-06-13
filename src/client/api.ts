@@ -14,9 +14,9 @@ export function readCookie(name: string): string | null {
   return null;
 }
 
-/** Redirect to Google login on 401 and throw so callers stop. */
+/** Redirect to the welcome/sign-in page on 401 and throw so callers stop. */
 function handle401(): never {
-  window.location.href = "/auth/google";
+  window.location.href = "/login";
   throw new Error("unauthorized");
 }
 
