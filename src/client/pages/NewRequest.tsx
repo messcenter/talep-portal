@@ -7,7 +7,7 @@ import { apiGet, apiSend } from "../api";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { inputClass } from "../components/forms";
-import { FileDropField } from "../components/FileDropField";
+import { FilePicker } from "../components/FilePicker";
 import { RichTextEditor } from "../components/RichTextEditor";
 
 type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
@@ -58,6 +58,7 @@ export function NewRequest() {
   const [moduleName, setModuleName] = useState("");
   const [apps, setApps] = useState<{ id: number; name: string }[] | null>(null);
   const [app, setApp] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
 
   useEffect(() => {
     apiGet<Dept[]>("/api/departments")
@@ -88,6 +89,7 @@ export function NewRequest() {
     fd.set("department", dept);
     fd.set("module_area", moduleName);
     fd.set("application", app);
+    for (const f of files) fd.append("files", f);
 
     const get = (k: string) => ((fd.get(k) as string) ?? "").trim();
     const errs: Record<string, string> = {};
@@ -328,12 +330,14 @@ export function NewRequest() {
               {fieldErrors.expected_benefit && <p className="text-danger text-xs mt-1" role="alert">{fieldErrors.expected_benefit}</p>}
             </div>
 
-            <div>
-              <span className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">
-                Ekler
-              </span>
-              <FileDropField name="files" disabled={submitting} />
-            </div>
+          {/* Row 7: File Attachments (optional) */}
+          <div className="mb-6">
+            <FieldLabel htmlFor="file-picker-input">Ekler</FieldLabel>
+            <FilePicker value={files} onChange={setFiles} disabled={submitting} />
+            <p className="text-xs text-on-surface-variant mt-1">
+              PNG, JPEG, WebP, GIF veya PDF · Birden fazla dosya seçilebilir
+            </p>
+          </div>
           </section>
 
           {/* ---- Submit ---- */}
