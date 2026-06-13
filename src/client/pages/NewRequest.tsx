@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { apiGet, apiSend } from "../api";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { inputClass } from "../components/forms";
+import { FileDropField } from "../components/FileDropField";
 
 type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
 
@@ -31,13 +33,13 @@ function FieldLabel({
   );
 }
 
-// ---- Shared input class ----
-
-const inputClass =
-  "block w-full rounded border border-border-subtle bg-white px-3 py-2 text-sm text-on-surface " +
-  "placeholder:text-on-surface-variant/50 " +
-  "focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary " +
-  "disabled:opacity-50 disabled:bg-surface-tonal";
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-semibold uppercase tracking-wide text-primary mb-3">
+      {children}
+    </h2>
+  );
+}
 
 // ---- Main component ----
 
@@ -125,186 +127,177 @@ export function NewRequest() {
 
         {depts && depts.length > 0 && (
         <form ref={formRef} onSubmit={handleSubmit} noValidate>
-          {/* Row 1: Department + Application (two-column on sm+) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-              <FieldLabel htmlFor="department" required>
-                Departman
-              </FieldLabel>
-              <select
-                id="department"
-                name="department"
-                required
-                value={dept}
-                onChange={(e) => {
-                  setDept(e.target.value);
-                  setModuleName("");
-                }}
-                className={inputClass}
-                disabled={submitting}
-              >
-                <option value="">Seçiniz…</option>
-                {depts.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+          {/* ---- Section 1: Kapsam ---- */}
+          <section className="pb-5">
+            <SectionHeading>Kapsam</SectionHeading>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel htmlFor="department" required>
+                  Departman
+                </FieldLabel>
+                <select
+                  id="department"
+                  name="department"
+                  required
+                  value={dept}
+                  onChange={(e) => {
+                    setDept(e.target.value);
+                    setModuleName("");
+                  }}
+                  className={inputClass}
+                  disabled={submitting}
+                >
+                  <option value="">Seçiniz…</option>
+                  {depts.map((d) => (
+                    <option key={d.id} value={d.name}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <FieldLabel htmlFor="application" required>
+                  Uygulama
+                </FieldLabel>
+                <input
+                  id="application"
+                  name="application"
+                  type="text"
+                  required
+                  maxLength={120}
+                  defaultValue="ERP"
+                  placeholder="ör. ERP"
+                  className={inputClass}
+                  disabled={submitting}
+                />
+              </div>
             </div>
-            <div>
-              <FieldLabel htmlFor="application" required>
-                Uygulama
+
+            {selectedDept && selectedDept.modules.length > 0 && (
+              <div className="mt-4">
+                <FieldLabel htmlFor="module_area">Modül / Alan</FieldLabel>
+                <select
+                  id="module_area"
+                  name="module_area"
+                  value={moduleName}
+                  onChange={(e) => setModuleName(e.target.value)}
+                  className={inputClass}
+                  disabled={submitting}
+                >
+                  <option value="">Seçiniz…</option>
+                  {selectedDept.modules.map((m) => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </section>
+
+          {/* ---- Section 2: Sınıflandırma ---- */}
+          <section className="py-5 border-t border-border-subtle">
+            <SectionHeading>Sınıflandırma</SectionHeading>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel htmlFor="request_type" required>
+                  Talep Türü
+                </FieldLabel>
+                <select
+                  id="request_type"
+                  name="request_type"
+                  required
+                  className={inputClass}
+                  disabled={submitting}
+                >
+                  <option value="">Seçiniz…</option>
+                  <option value="feature">Yeni Özellik</option>
+                  <option value="bug">Hata</option>
+                  <option value="task">Görev</option>
+                </select>
+              </div>
+              <div>
+                <FieldLabel htmlFor="priority" required>
+                  Öncelik
+                </FieldLabel>
+                <select
+                  id="priority"
+                  name="priority"
+                  required
+                  className={inputClass}
+                  disabled={submitting}
+                >
+                  <option value="">Seçiniz…</option>
+                  <option value="low">Düşük</option>
+                  <option value="medium">Orta</option>
+                  <option value="high">Yüksek</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {/* ---- Section 3: Talep Detayı ---- */}
+          <section className="pt-5 border-t border-border-subtle">
+            <SectionHeading>Talep Detayı</SectionHeading>
+
+            <div className="mb-4">
+              <FieldLabel htmlFor="title" required>
+                Başlık
               </FieldLabel>
               <input
-                id="application"
-                name="application"
+                id="title"
+                name="title"
                 type="text"
                 required
-                maxLength={120}
-                defaultValue="ERP"
-                placeholder="ör. ERP"
+                maxLength={200}
+                placeholder="Talebi özetleyen kısa bir başlık"
                 className={inputClass}
                 disabled={submitting}
               />
             </div>
-          </div>
 
-          {/* Row 2: Module Area (optional, scoped to selected department) */}
-          {selectedDept && selectedDept.modules.length > 0 && (
             <div className="mb-4">
-              <FieldLabel htmlFor="module_area">Modül / Alan</FieldLabel>
-              <select
-                id="module_area"
-                name="module_area"
-                value={moduleName}
-                onChange={(e) => setModuleName(e.target.value)}
-                className={inputClass}
-                disabled={submitting}
-              >
-                <option value="">Seçiniz…</option>
-                {selectedDept.modules.map((m) => (
-                  <option key={m.id} value={m.name}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Row 3: Request Type + Priority (two-column on sm+) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-              <FieldLabel htmlFor="request_type" required>
-                Talep Türü
+              <FieldLabel htmlFor="description" required>
+                Açıklama
               </FieldLabel>
-              <select
-                id="request_type"
-                name="request_type"
+              <textarea
+                id="description"
+                name="description"
                 required
-                className={inputClass}
+                maxLength={5000}
+                rows={5}
+                placeholder="Talebi ayrıntılı olarak açıklayın."
+                className={inputClass + " resize-y"}
                 disabled={submitting}
-              >
-                <option value="">Seçiniz…</option>
-                <option value="feature">Yeni Özellik</option>
-                <option value="bug">Hata</option>
-                <option value="task">Görev</option>
-              </select>
+              />
             </div>
-            <div>
-              <FieldLabel htmlFor="priority" required>
-                Öncelik
+
+            <div className="mb-4">
+              <FieldLabel htmlFor="expected_benefit" required>
+                Beklenen Fayda
               </FieldLabel>
-              <select
-                id="priority"
-                name="priority"
+              <textarea
+                id="expected_benefit"
+                name="expected_benefit"
                 required
-                className={inputClass}
+                maxLength={2000}
+                rows={3}
+                placeholder="Bu talep hayata geçirilirse ne kazanırız?"
+                className={inputClass + " resize-y"}
                 disabled={submitting}
-              >
-                <option value="">Seçiniz…</option>
-                <option value="low">Düşük</option>
-                <option value="medium">Orta</option>
-                <option value="high">Yüksek</option>
-              </select>
+              />
             </div>
-          </div>
 
-          {/* Row 4: Title */}
-          <div className="mb-4">
-            <FieldLabel htmlFor="title" required>
-              Başlık
-            </FieldLabel>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              required
-              maxLength={200}
-              placeholder="Talebi özetleyen kısa bir başlık"
-              className={inputClass}
-              disabled={submitting}
-            />
-          </div>
+            <div>
+              <FieldLabel htmlFor="files">Ekler</FieldLabel>
+              <FileDropField name="files" disabled={submitting} />
+            </div>
+          </section>
 
-          {/* Row 5: Description */}
-          <div className="mb-4">
-            <FieldLabel htmlFor="description" required>
-              Açıklama
-            </FieldLabel>
-            <textarea
-              id="description"
-              name="description"
-              required
-              maxLength={5000}
-              rows={5}
-              placeholder="Talebi ayrıntılı olarak açıklayın."
-              className={inputClass + " resize-y"}
-              disabled={submitting}
-            />
-          </div>
-
-          {/* Row 6: Expected Benefit */}
-          <div className="mb-4">
-            <FieldLabel htmlFor="expected_benefit" required>
-              Beklenen Fayda
-            </FieldLabel>
-            <textarea
-              id="expected_benefit"
-              name="expected_benefit"
-              required
-              maxLength={2000}
-              rows={3}
-              placeholder="Bu talep hayata geçirilirse ne kazanırız?"
-              className={inputClass + " resize-y"}
-              disabled={submitting}
-            />
-          </div>
-
-          {/* Row 7: File Attachments (optional) */}
-          <div className="mb-6">
-            <FieldLabel htmlFor="files">Ekler</FieldLabel>
-            <input
-              id="files"
-              name="files"
-              type="file"
-              multiple
-              accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
-              className={
-                "block w-full text-sm text-on-surface-variant " +
-                "file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:border-border-subtle " +
-                "file:text-xs file:font-semibold file:uppercase file:tracking-wide " +
-                "file:text-on-surface-variant file:bg-surface-tonal file:cursor-pointer " +
-                "hover:file:bg-surface-container disabled:opacity-50"
-              }
-              disabled={submitting}
-            />
-            <p className="text-xs text-on-surface-variant mt-1">
-              PNG, JPEG, WebP, GIF veya PDF · Birden fazla dosya seçilebilir
-            </p>
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end">
+          {/* ---- Submit ---- */}
+          <div className="flex justify-end pt-5 mt-5 border-t border-border-subtle">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>
               {submitting ? "Gönderiliyor…" : "Talep Gönder"}
             </Button>
