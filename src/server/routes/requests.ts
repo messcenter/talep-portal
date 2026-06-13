@@ -5,7 +5,7 @@ import { newRequestSchema, replySchema } from "../../domain/validation";
 import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
-import { esc } from "../escape";
+import { newRequestAdmin, newRequestRequester, replyAdmin } from "../../mail/templates";
 
 /** Parse a Bun Request's multipart body into a plain Record, normalizing
  * multiple values for the same key into an array (used for `files`). */
@@ -70,18 +70,12 @@ export async function handleRequests(
       throw err;
     }
     // Best-effort mails — failures must not block the response.
+    const adminMail = newRequestAdmin(r, deps.config.appBaseUrl);
     for (const admin of deps.config.adminEmails) {
-      deps.mailer.send(
-        admin,
-        `Yeni talep: ${r.request_no}`,
-        `<p>${r.request_no} — ${esc(r.title)}</p><p><a href="${deps.config.appBaseUrl}/admin/requests/${r.id}">İncele</a></p>`,
-      ).catch(() => {});
+      deps.mailer.send(admin, adminMail.subject, adminMail.html, adminMail.text).catch(() => {});
     }
-    deps.mailer.send(
-      user.email,
-      `Talebiniz alındı: ${r.request_no}`,
-      `<p>Talebiniz alındı. Takip: <a href="${deps.config.appBaseUrl}/requests/${r.id}">${r.request_no}</a></p>`,
-    ).catch(() => {});
+    const reqMail = newRequestRequester(r, deps.config.appBaseUrl);
+    deps.mailer.send(user.email, reqMail.subject, reqMail.html, reqMail.text).catch(() => {});
     return json({ id: r.id }, 201, extraHeaders);
   }
 
@@ -132,12 +126,9 @@ export async function handleRequests(
       throw err;
     }
     // Best-effort mails.
+    const replyMail = replyAdmin(r, deps.config.appBaseUrl);
     for (const admin of deps.config.adminEmails) {
-      deps.mailer.send(
-        admin,
-        `Cevaplandı: ${r.request_no}`,
-        `<p><a href="${deps.config.appBaseUrl}/admin/requests/${r.id}">${r.request_no} cevaplandı</a></p>`,
-      ).catch(() => {});
+      deps.mailer.send(admin, replyMail.subject, replyMail.html, replyMail.text).catch(() => {});
     }
     // 204 No Content — carry extraHeaders (e.g. csrf Set-Cookie).
     const resHeaders = new Headers({ ...extraHeaders });

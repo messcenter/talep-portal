@@ -6,7 +6,7 @@ import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
 import { parseForm } from "./requests";
-import { esc } from "../escape";
+import { questionRequester, decisionRequester } from "../../mail/templates";
 
 /**
  * Dispatcher for all /api/admin/* routes.
@@ -66,11 +66,8 @@ export async function handleAdmin(
       throw err;
     }
     // Best-effort mail to requester.
-    deps.mailer.send(
-      r.requester_email,
-      `Talebiniz hakkında soru: ${r.request_no}`,
-      `<p>Talebinizle ilgili sorular var. <a href="${deps.config.appBaseUrl}/requests/${r.id}">Cevaplayın</a></p>`,
-    ).catch(() => {});
+    const qMail = questionRequester(r, deps.config.appBaseUrl);
+    deps.mailer.send(r.requester_email, qMail.subject, qMail.html, qMail.text).catch(() => {});
     const resHeaders = new Headers({ ...extraHeaders });
     return new Response(null, { status: 204, headers: resHeaders });
   }
@@ -104,11 +101,8 @@ export async function handleAdmin(
       deps.now(),
     );
     // Best-effort mail to requester.
-    deps.mailer.send(
-      r.requester_email,
-      `Talep ${target === "accepted" ? "kabul edildi" : "reddedildi"}: ${r.request_no}`,
-      `<p>${r.request_no} ${target === "accepted" ? "kabul edildi" : "reddedildi"}.</p>${parsed.data.reason ? `<p>${esc(parsed.data.reason)}</p>` : ""}`,
-    ).catch(() => {});
+    const dMail = decisionRequester(r, deps.config.appBaseUrl, target, parsed.data.reason);
+    deps.mailer.send(r.requester_email, dMail.subject, dMail.html, dMail.text).catch(() => {});
     const resHeaders = new Headers({ ...extraHeaders });
     return new Response(null, { status: 204, headers: resHeaders });
   }
