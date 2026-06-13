@@ -42,7 +42,7 @@ bun test               # tüm testler
 | `src/mail/` | best-effort mailer (hata akışı bloklamaz) | — |
 | `src/storage/` | dosya sistemi ek I/O (put/read/remove) | `Deps` ile enjekte; domain'e sızma |
 | `src/server/` | **Bun.serve HTTP katmanı**: `handler.ts` (saf `(Request)→Response` router + DI `Deps`), `guards.ts` (session/CSRF), `cookies.ts`, `context.ts`, `escape.ts`, `uploads.ts`, `routes/{requests,admin,auth,attachments}.ts` (JSON/binary handler'lar) | ince adapter; iş kuralını domain'e delege et |
-| `src/client/` | **istemci React SPA**: `index.html`, `main.tsx`, `app.tsx` (react-router), `api.ts` (fetch + CSRF header + 401 redirect), `pages/*`, `components/*`, `auth.tsx`, `labels.ts` | I/O yok — yalnız `api.ts` server'a fetch eder |
+| `src/client/` | **istemci React SPA**: `index.html`, `main.tsx`, `app.tsx` (react-router ağacı), `api.ts` (fetch + CSRF header + 401 redirect), `auth.tsx`, `labels.ts`, `layouts/` (`AuthGate` /api/me+context, `EmployeeLayout` üst-header, `AdminLayout` sidebar konsol — admin-gate), `hooks/` (`useRequestDetail`), `pages/*` (ayrı `RequestDetailEmployee` + `RequestDetailAdmin`), `components/*` | I/O yok — yalnız `api.ts` server'a fetch eder. **Çalışan alanı** (`/yeni`,`/my`,`/requests/:id`) ile **Yönetim alanı** (`/admin`,`/admin/tanimlar`,`/admin/requests/:id`) ayrı layout+rota namespace'leri |
 | `src/components/ui/` | shadcn primitive'leri (Button/Card/Badge/Dialog) | — |
 | `src/index.ts` | `Bun.serve({ routes, fetch: makeHandler(deps) })` + DI wiring | — |
 
