@@ -88,18 +88,16 @@ function AppLayout() {
 
             {/* Nav */}
             <nav className="flex items-center gap-1">
-              <NavLink to="/my" className={linkClass}>
-                Taleplerim
-              </NavLink>
+              {/* Çalışan alanı */}
+              <NavLink to="/my" className={linkClass}>Taleplerim</NavLink>
+              <NavLink to="/yeni" className={linkClass}>Yeni Talep</NavLink>
               {user.isAdmin && (
-                <NavLink to="/admin" className={linkClass}>
-                  Yönetim
-                </NavLink>
-              )}
-              {user.isAdmin && (
-                <NavLink to="/admin/tanimlar" className={linkClass}>
-                  Tanımlar
-                </NavLink>
+                <>
+                  <span className="mx-1 h-5 w-px bg-border-subtle" aria-hidden="true" />
+                  {/* Yönetim alanı */}
+                  <NavLink to="/admin" className={linkClass}>Tüm Talepler</NavLink>
+                  <NavLink to="/admin/tanimlar" className={linkClass}>Tanımlar</NavLink>
+                </>
               )}
             </nav>
 
