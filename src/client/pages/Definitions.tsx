@@ -23,11 +23,16 @@ function DefinitionsInner() {
   const [depts, setDepts] = useState<Dept[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newDept, setNewDept] = useState("");
+  const [apps, setApps] = useState<{ id: number; name: string }[] | null>(null);
+  const [newApp, setNewApp] = useState("");
 
   const load = useCallback(() => {
     setError(null);
     apiGet<Dept[]>("/api/departments")
       .then(setDepts)
+      .catch((e) => setError(e instanceof Error ? e.message : "Bir hata oluştu."));
+    apiGet<{ id: number; name: string }[]>("/api/applications")
+      .then(setApps)
       .catch((e) => setError(e instanceof Error ? e.message : "Bir hata oluştu."));
   }, []);
   useEffect(() => {
@@ -77,11 +82,30 @@ function DefinitionsInner() {
       setError(e instanceof Error ? e.message : "Bir hata oluştu.");
     }
   }
+  async function addApp() {
+    const name = newApp.trim();
+    if (!name) return;
+    try {
+      await apiSend("/api/admin/applications", "POST", JSON.stringify({ name }), "application/json");
+      setNewApp("");
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bir hata oluştu.");
+    }
+  }
+  async function delApp(id: number) {
+    try {
+      await apiSend(`/api/admin/applications/${id}`, "DELETE");
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bir hata oluştu.");
+    }
+  }
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold tracking-tight text-on-surface mb-4">
-        Tanımlar — Departman & Modül
+        Tanımlar — Departman, Modül & Uygulama
       </h1>
       {error && (
         <div
@@ -107,6 +131,47 @@ function DefinitionsInner() {
             }}
           />
           <Button type="button" onClick={addDept}>
+            Ekle
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="p-4 mb-6">
+        <span className="block text-xs font-semibold uppercase tracking-wide mb-2 text-on-surface-variant">
+          Uygulamalar
+        </span>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {apps?.map((a) => (
+            <span
+              key={a.id}
+              className="inline-flex items-center gap-1.5 bg-surface-tonal border border-border-subtle rounded-lg px-2.5 py-1 text-xs"
+            >
+              {a.name}
+              <button
+                type="button"
+                className="text-danger font-bold leading-none px-1"
+                aria-label={`${a.name} sil`}
+                onClick={() => delApp(a.id)}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          {apps && apps.length === 0 && (
+            <span className="text-xs text-on-surface-variant">Uygulama yok</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <input
+            className={`${inputCls} flex-1`}
+            placeholder="Yeni uygulama (ör. ERP)"
+            value={newApp}
+            onChange={(e) => setNewApp(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addApp();
+            }}
+          />
+          <Button type="button" onClick={addApp}>
             Ekle
           </Button>
         </div>
