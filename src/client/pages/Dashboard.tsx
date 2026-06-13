@@ -6,7 +6,6 @@ import { apiGet } from "../api";
 import { useUser } from "../auth";
 import { statusLabelTr, type RequestStatus } from "../../domain/status";
 import type { DashboardStats, Priority } from "../../domain/stats";
-import { PRIORITIES } from "../../domain/validation";
 import { PRIORITY_LABEL } from "../labels";
 import { StatusBadge } from "../components/StatusBadge";
 import { Spinner } from "../components/Spinner";
@@ -20,7 +19,7 @@ const STATUS_BAR: Record<RequestStatus, string> = {
   rejected: "bg-status-ret",
 };
 
-const PRIORITY_ORDER: Priority[] = [...PRIORITIES].reverse(); // ["high","medium","low"]
+const PRIORITY_ORDER: Priority[] = ["high", "medium", "low"];
 const PRIORITY_BAR: Record<Priority, string> = {
   high: "bg-danger",
   medium: "bg-status-netlestiriliyor",
