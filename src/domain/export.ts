@@ -69,7 +69,7 @@ export function requestToMarkdown(data: {
   lines.push("");
   lines.push("| Alan | Değer |");
   lines.push("|---|---|");
-  lines.push(`| Durum | ${cell(statusLabelTr(r.status))} |`);
+  lines.push(`| Durum | ${cell(statusLabelTr(r.status) ?? r.status)} |`);
   lines.push(`| Öncelik | ${cell(PRIORITY_LABEL_TR[r.priority] ?? r.priority)} |`);
   lines.push(`| Tür | ${cell(REQUEST_TYPE_LABEL_TR[r.request_type] ?? r.request_type)} |`);
   lines.push(`| Departman | ${cell(r.department)} |`);

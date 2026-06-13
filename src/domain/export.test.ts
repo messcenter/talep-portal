@@ -89,6 +89,11 @@ describe("requestToMarkdown", () => {
     expect(md).toContain("| Tür | other |");
   });
 
+  test("falls back to raw value for unknown status", () => {
+    const md = requestToMarkdown({ request: { ...baseRequest, status: "archived" as any }, messages: [], attachments: [] });
+    expect(md).toContain("| Durum | archived |");
+  });
+
   test("escapes pipe and newline in metadata cells so the table is not broken", () => {
     const md = requestToMarkdown({ request: { ...baseRequest, department: "A|B", application: "x\ny" }, messages: [], attachments: [] });
     expect(md).toContain("| Departman | A\\|B |");
