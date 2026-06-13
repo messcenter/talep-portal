@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { apiSend } from "../api";
 import { Button } from "../../components/ui/button";
 import { fileInputClass, fileAccept } from "./forms";
-import { MarkdownEditor } from "./MarkdownEditor";
+import { RichTextEditor } from "./RichTextEditor";
 
 // ---- Reply form (requester only, status === "clarifying") ----
 
@@ -15,6 +15,7 @@ export function ReplyForm({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,6 +30,7 @@ export function ReplyForm({
     try {
       await apiSend(`/api/requests/${requestId}/reply`, "POST", fd);
       formRef.current.reset();
+      setEditorKey((k) => k + 1);
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Beklenmeyen bir hata oluştu.";
@@ -59,7 +61,8 @@ export function ReplyForm({
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
         <div className="mb-3">
-          <MarkdownEditor
+          <RichTextEditor
+            key={editorKey}
             name="body"
             required
             maxLength={5000}

@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { isTerminal, type RequestStatus } from "../../domain/status";
-import { MarkdownEditor } from "./MarkdownEditor";
+import { RichTextEditor } from "./RichTextEditor";
 
 const fileInputClass =
   "block w-full text-sm text-on-surface-variant " +
@@ -33,6 +33,7 @@ function ClarificationForm({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -46,6 +47,7 @@ function ClarificationForm({
     try {
       await apiSend(`/api/admin/requests/${requestId}/message`, "POST", fd);
       formRef.current.reset();
+      setEditorKey((k) => k + 1);
       onDone();
     } catch (err) {
       setErrorMsg(
@@ -72,7 +74,8 @@ function ClarificationForm({
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
         <div className="mb-3">
-          <MarkdownEditor
+          <RichTextEditor
+            key={editorKey}
             name="body"
             required
             maxLength={5000}
@@ -178,13 +181,11 @@ function DecisionForm({
               Ret gerekçesi
             </label>
             <div className="mb-4">
-              <MarkdownEditor
+              <RichTextEditor
                 value={rejectReason}
                 onChange={setRejectReason}
                 required
                 maxLength={2000}
-                height={160}
-                placeholder="Ret gerekçesi…"
               />
             </div>
 

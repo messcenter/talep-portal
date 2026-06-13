@@ -19,7 +19,6 @@ const publicDir = join(import.meta.dir, "..", "public");
 const spaShell = Bun.file(join(publicDir, "index.html"));
 const clientJs = Bun.file(join(publicDir, "client.js"));
 const appCss = Bun.file(join(publicDir, "app.css"));
-const mdEditorCss = Bun.file(join(publicDir, "md-editor.css"));
 
 Bun.serve({
   port: config.port,
@@ -43,7 +42,6 @@ Bun.serve({
     // Pre-built client bundle and compiled CSS.
     "/client.js": clientJs,
     "/app.css": appCss,
-    "/md-editor.css": mdEditorCss,
   },
 
   // Everything else: API, auth, logout, attachments, and any remaining GET

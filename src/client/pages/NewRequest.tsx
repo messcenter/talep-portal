@@ -8,7 +8,7 @@ import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { inputClass } from "../components/forms";
 import { FileDropField } from "../components/FileDropField";
-import { MarkdownEditor } from "../components/MarkdownEditor";
+import { RichTextEditor } from "../components/RichTextEditor";
 
 type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
 
@@ -263,7 +263,7 @@ export function NewRequest() {
               <FieldLabel htmlFor="description" required>
                 Açıklama
               </FieldLabel>
-              <MarkdownEditor
+              <RichTextEditor
                 name="description"
                 required
                 maxLength={5000}
@@ -275,7 +275,7 @@ export function NewRequest() {
               <FieldLabel htmlFor="expected_benefit" required>
                 Beklenen Fayda
               </FieldLabel>
-              <MarkdownEditor
+              <RichTextEditor
                 name="expected_benefit"
                 required
                 maxLength={2000}
