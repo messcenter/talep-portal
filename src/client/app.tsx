@@ -6,6 +6,7 @@ import { AuthGate } from "./layouts/AuthGate";
 import { EmployeeLayout } from "./layouts/EmployeeLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { Login } from "./pages/Login";
+import { ToastProvider } from "./components/Toast";
 
 // Route pages are code-split: the heavy editor stack (TipTap/ProseMirror) and the
 // markdown renderer load only when their route is visited, not on first paint.
@@ -44,25 +45,27 @@ function Home() {
 
 export function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route element={<AuthGate />}>
-          <Route index element={<Home />} />
-          <Route element={<EmployeeLayout />}>
-            <Route path="/yeni" element={<NewRequest />} />
-            <Route path="/my" element={<MyList />} />
-            <Route path="/requests/:id" element={<RequestDetailEmployee />} />
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<AuthGate />}>
+            <Route index element={<Home />} />
+            <Route element={<EmployeeLayout />}>
+              <Route path="/yeni" element={<NewRequest />} />
+              <Route path="/my" element={<MyList />} />
+              <Route path="/requests/:id" element={<RequestDetailEmployee />} />
+            </Route>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<Dashboard />} />
+              <Route path="/admin/talepler" element={<Admin />} />
+              <Route path="/admin/tanimlar" element={<Definitions />} />
+              <Route path="/admin/requests/:id" element={<RequestDetailAdmin />} />
+            </Route>
           </Route>
-          <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<Dashboard />} />
-            <Route path="/admin/talepler" element={<Admin />} />
-            <Route path="/admin/tanimlar" element={<Definitions />} />
-            <Route path="/admin/requests/:id" element={<RequestDetailAdmin />} />
-          </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
