@@ -34,7 +34,16 @@ export async function handleDefinitions(
     return json(deps.repo.listDepartmentsWithModules(), 200, extraHeaders);
   }
 
-  if (path.startsWith("/api/admin/departments") || path.startsWith("/api/admin/modules")) {
+  // GET /api/applications — available to any authenticated user (needed to populate forms)
+  if (path === "/api/applications" && method === "GET") {
+    return json(deps.repo.listApplications(), 200, extraHeaders);
+  }
+
+  if (
+    path.startsWith("/api/admin/departments") ||
+    path.startsWith("/api/admin/modules") ||
+    path.startsWith("/api/admin/applications")
+  ) {
     if (!user.isAdmin) return json({ error: "forbidden" }, 403, extraHeaders);
 
     // POST /api/admin/departments
@@ -81,6 +90,28 @@ export async function handleDefinitions(
       const id = Number(m[1]);
       if (!deps.repo.getModule(id)) return json({ error: "not found" }, 404, extraHeaders);
       deps.repo.deleteModule(id);
+      return new Response(null, { status: 204, headers: extraHeaders });
+    }
+
+    // POST /api/admin/applications
+    if (path === "/api/admin/applications" && method === "POST") {
+      const name = await readName(req);
+      if (!name) return json({ errors: ["İsim gerekli"] }, 400, extraHeaders);
+      try {
+        const a = deps.repo.createApplication(name, deps.now());
+        return json({ id: a.id }, 201, extraHeaders);
+      } catch (e) {
+        if (isUniqueErr(e)) return json({ error: "Bu uygulama zaten var" }, 409, extraHeaders);
+        throw e;
+      }
+    }
+
+    // DELETE /api/admin/applications/:id
+    m = path.match(/^\/api\/admin\/applications\/(\d+)$/);
+    if (m && method === "DELETE") {
+      const id = Number(m[1]);
+      if (!deps.repo.getApplication(id)) return json({ error: "not found" }, 404, extraHeaders);
+      deps.repo.deleteApplication(id);
       return new Response(null, { status: 204, headers: extraHeaders });
     }
   }

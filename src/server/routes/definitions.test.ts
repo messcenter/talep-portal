@@ -49,6 +49,11 @@ function schema(db: Database): Database {
       created_at TEXT NOT NULL,
       UNIQUE(department_id, name)
     );
+    CREATE TABLE applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
   `);
   return db;
 }
@@ -227,6 +232,63 @@ describe("DELETE /api/admin/departments/:id", () => {
     const res = await handler(new Request("http://x/api/admin/departments/99999", {
       method: "DELETE",
       headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─── GET /api/applications ────────────────────────────────────────────────────
+describe("GET /api/applications", () => {
+  test("normal user → 200, returns applications", async () => {
+    repo.createApplication("ERP", "2026-01-01T00:00:00.000Z");
+    const res = await handler(new Request("http://x/api/applications", {
+      headers: { cookie: userCookie() },
+    }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as any[];
+    expect(body.map((a) => a.name)).toEqual(["ERP"]);
+  });
+
+  test("no session → 401", async () => {
+    const res = await handler(new Request("http://x/api/applications"));
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─── POST /api/admin/applications ─────────────────────────────────────────────
+describe("POST /api/admin/applications", () => {
+  test("admin valid → 201 {id}", async () => {
+    const res = await handler(jsonReq("POST", "/api/admin/applications", { name: "ERP" }, adminCookie()));
+    expect(res.status).toBe(201);
+    expect((await res.json() as any).id).toBeGreaterThan(0);
+  });
+  test("non-admin → 403", async () => {
+    const res = await handler(jsonReq("POST", "/api/admin/applications", { name: "ERP" }, userCookie()));
+    expect(res.status).toBe(403);
+  });
+  test("blank name → 400", async () => {
+    const res = await handler(jsonReq("POST", "/api/admin/applications", { name: "  " }, adminCookie()));
+    expect(res.status).toBe(400);
+  });
+  test("duplicate → 409", async () => {
+    await handler(jsonReq("POST", "/api/admin/applications", { name: "ERP" }, adminCookie()));
+    const res = await handler(jsonReq("POST", "/api/admin/applications", { name: "ERP" }, adminCookie()));
+    expect(res.status).toBe(409);
+  });
+});
+
+// ─── DELETE /api/admin/applications/:id ───────────────────────────────────────
+describe("DELETE /api/admin/applications/:id", () => {
+  test("existing → 204", async () => {
+    const a = repo.createApplication("ERP", "2026-01-01T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/admin/applications/${a.id}`, {
+      method: "DELETE", headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(204);
+  });
+  test("nonexistent → 404", async () => {
+    const res = await handler(new Request("http://x/api/admin/applications/99999", {
+      method: "DELETE", headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
     }));
     expect(res.status).toBe(404);
   });
