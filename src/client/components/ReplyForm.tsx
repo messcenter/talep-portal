@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { apiSend } from "../api";
 import { Button } from "../../components/ui/button";
-import { fileInputClass, fileAccept } from "./forms";
 import { RichTextEditor } from "./RichTextEditor";
+import { FilePicker } from "./FilePicker";
 
 // ---- Reply form (requester only, status === "clarifying") ----
 
@@ -15,6 +15,7 @@ export function ReplyForm({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [editorKey, setEditorKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -26,6 +27,7 @@ export function ReplyForm({
     setErrorMsg(null);
 
     const fd = new FormData(formRef.current);
+    for (const f of files) fd.append("files", f);
 
     const body = ((fd.get("body") as string) ?? "").trim();
     if (!body) { setErrorMsg("Cevap gerekli"); setSubmitting(false); return; }
@@ -33,6 +35,7 @@ export function ReplyForm({
     try {
       await apiSend(`/api/requests/${requestId}/reply`, "POST", fd);
       formRef.current.reset();
+      setFiles([]);
       setEditorKey((k) => k + 1);
       onSuccess();
     } catch (err) {
@@ -74,14 +77,7 @@ export function ReplyForm({
         </div>
 
         <div className="mb-4">
-          <input
-            name="files"
-            type="file"
-            multiple
-            accept={fileAccept}
-            className={fileInputClass}
-            disabled={submitting}
-          />
+          <FilePicker value={files} onChange={setFiles} disabled={submitting} />
           <p className="text-xs text-on-surface-variant mt-1">
             PNG, JPEG, WebP, GIF veya PDF · İsteğe bağlı
           </p>
