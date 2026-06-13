@@ -5,6 +5,7 @@ import { apiGet, apiSend } from "../api";
 import { useUser } from "../auth";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 type Dept = { id: number; name: string; modules: { id: number; name: string }[] };
 
@@ -25,6 +26,7 @@ function DefinitionsInner() {
   const [newDept, setNewDept] = useState("");
   const [apps, setApps] = useState<{ id: number; name: string }[] | null>(null);
   const [newApp, setNewApp] = useState("");
+  const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -102,6 +104,28 @@ function DefinitionsInner() {
     }
   }
 
+  function askDelDept(d: Dept) {
+    setConfirm({
+      title: "Departmanı sil?",
+      message: `«${d.name}» ve modülleri silinsin mi? Geçmiş talepler etkilenmez.`,
+      onConfirm: () => delDept(d.id),
+    });
+  }
+  function askDelModule(deptName: string, m: { id: number; name: string }) {
+    setConfirm({
+      title: "Modülü sil?",
+      message: `«${deptName} › ${m.name}» silinsin mi? Geçmiş talepler etkilenmez.`,
+      onConfirm: () => delModule(m.id),
+    });
+  }
+  function askDelApp(a: { id: number; name: string }) {
+    setConfirm({
+      title: "Uygulamayı sil?",
+      message: `«${a.name}» silinsin mi? Geçmiş talepler etkilenmez.`,
+      onConfirm: () => delApp(a.id),
+    });
+  }
+
   return (
     <main className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold tracking-tight text-on-surface mb-4">
@@ -151,7 +175,7 @@ function DefinitionsInner() {
                 type="button"
                 className="text-danger font-bold leading-none px-1"
                 aria-label={`${a.name} sil`}
-                onClick={() => delApp(a.id)}
+                onClick={() => askDelApp(a)}
               >
                 ✕
               </button>
@@ -186,12 +210,22 @@ function DefinitionsInner() {
           <DeptCard
             key={d.id}
             d={d}
-            onDelDept={delDept}
+            onDelDept={askDelDept}
             onAddModule={addModule}
-            onDelModule={delModule}
+            onDelModule={askDelModule}
           />
         ))}
       </div>
+      {confirm && (
+        <ConfirmDialog
+          open={!!confirm}
+          onOpenChange={(o) => { if (!o) setConfirm(null); }}
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel="Sil"
+          onConfirm={confirm.onConfirm}
+        />
+      )}
     </main>
   );
 }
@@ -203,9 +237,9 @@ function DeptCard({
   onDelModule,
 }: {
   d: Dept;
-  onDelDept: (id: number) => void;
+  onDelDept: (d: Dept) => void;
   onAddModule: (deptId: number, name: string, reset: () => void) => void;
-  onDelModule: (id: number) => void;
+  onDelModule: (deptName: string, m: { id: number; name: string }) => void;
 }) {
   const [mod, setMod] = useState("");
   const inputClsLocal =
@@ -217,7 +251,7 @@ function DeptCard({
         <button
           type="button"
           className="text-danger text-sm hover:underline"
-          onClick={() => onDelDept(d.id)}
+          onClick={() => onDelDept(d)}
         >
           Sil
         </button>
@@ -233,7 +267,7 @@ function DeptCard({
               type="button"
               className="text-danger font-bold leading-none"
               aria-label={`${m.name} sil`}
-              onClick={() => onDelModule(m.id)}
+              onClick={() => onDelModule(d.name, m)}
             >
               ✕
             </button>
