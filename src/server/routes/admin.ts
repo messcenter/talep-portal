@@ -44,10 +44,11 @@ export async function handleAdmin(
       messages: deps.repo.listMessages(r.id),
       attachments: deps.repo.listAttachmentsByRequest(r.id),
     });
+    const safeNo = r.request_no.replace(/[^\w-]/g, "_");
     const headers = new Headers({
       ...extraHeaders,
       "Content-Type": "text/markdown; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${r.request_no}.md"`,
+      "Content-Disposition": `attachment; filename="${safeNo}.md"`,
     });
     return new Response(md, { status: 200, headers });
   }
