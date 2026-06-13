@@ -18,7 +18,6 @@ export function canViewRequest(user: User, req: RequestRef): boolean {
 }
 
 export function canReply(user: User, req: RequestRef): boolean {
-  if (user.isAdmin) return false;
   if (user.email.toLowerCase() !== req.requester_email.toLowerCase())
     return false;
   return req.status === "clarifying";

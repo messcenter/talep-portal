@@ -36,17 +36,28 @@ describe("canViewRequest", () => {
 });
 
 describe("canReply", () => {
-  test("owner can reply when clarifying", () => {
+  test("owner (non-admin) can reply when clarifying", () => {
     expect(canReply(owner, { ...req, status: "clarifying" })).toBe(true);
   });
-  test("owner cannot reply when not clarifying", () => {
+  test("owner who is ALSO admin can reply to their own clarifying request", () => {
+    const adminOwner = { email: "a@kokilmetal.com.tr", name: "A", isAdmin: true };
+    expect(canReply(adminOwner, { ...req, status: "clarifying" })).toBe(true);
+  });
+  test("admin canNOT reply to someone else's request", () => {
+    expect(canReply(admin, { ...req, status: "clarifying" })).toBe(false);
+  });
+  test("non-owner non-admin canNOT reply", () => {
+    expect(canReply(other, { ...req, status: "clarifying" })).toBe(false);
+  });
+  test("owner canNOT reply when not clarifying (answered)", () => {
+    expect(canReply(owner, { ...req, status: "answered" })).toBe(false);
+  });
+  test("owner cannot reply when not clarifying (new or accepted)", () => {
     expect(canReply(owner, { ...req, status: "new" })).toBe(false);
     expect(canReply(owner, { ...req, status: "accepted" })).toBe(false);
   });
-  test("admin does not reply via requester path", () => {
-    expect(canReply(admin, { ...req, status: "clarifying" })).toBe(false);
-  });
-  test("other cannot reply", () => {
-    expect(canReply(other, { ...req, status: "clarifying" })).toBe(false);
+  test("email comparison is case-insensitive", () => {
+    const upperOwner = { email: "A@Kokilmetal.com.tr", name: "A", isAdmin: false };
+    expect(canReply(upperOwner, { ...req, status: "clarifying" })).toBe(true);
   });
 });
