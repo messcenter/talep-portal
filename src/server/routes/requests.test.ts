@@ -528,6 +528,26 @@ describe("POST /api/requests/:id/reply", () => {
     expect(atts[0]!.message_id).not.toBeNull();
   });
 
+  test("admin-owner can reply to their own clarifying request → 204", async () => {
+    // boss@ submits a request, then admin sends a clarification question, then boss@ (as owner) replies.
+    const r = repo.createRequest(
+      { requester_name: "Yönetici", requester_email: "boss@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "b", priority: "high" },
+      "2026-01-01T00:00:00.000Z",
+    );
+    repo.addMessageAndTransition(r.id, { role: "admin", body: "soru" }, "clarifying", "2026-01-01T00:00:00.000Z");
+    const sessionToken = signSession({ email: "boss@kokilmetal.com.tr", name: "Boss" }, cfg.sessionSecret);
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/reply`, {
+      method: "POST",
+      body: replyForm("cevap"),
+      headers: { cookie: `session=${sessionToken}; csrf=tok`, "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("answered");
+  });
+
   test("CSRF symmetry: POST without X-CSRF-Token → 403, message NOT persisted", async () => {
     const r = seedClarifyingRequest();
     const res = await handler(new Request(`http://x/api/requests/${r.id}/reply`, {

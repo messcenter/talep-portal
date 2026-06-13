@@ -242,6 +242,29 @@ describe("POST /api/admin/requests/:id/message", () => {
     expect(sent.some((m) => m.to === "a@kokilmetal.com.tr")).toBe(true);
   });
 
+  test("admin CANNOT add clarification to their OWN request → 403", async () => {
+    const r = seedRequest("boss@kokilmetal.com.tr");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/message`, {
+      method: "POST",
+      body: messageForm("A question"),
+      headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(403);
+    // No state change
+    expect(repo.getRequest(r.id)?.status).toBe("new");
+  });
+
+  test("admin CAN clarify someone else's request → 204 (regression)", async () => {
+    const r = seedRequest("ali@kokilmetal.com.tr");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/message`, {
+      method: "POST",
+      body: messageForm("Please clarify"),
+      headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("clarifying");
+  });
+
   test("admin question can carry an attachment: stored and linked to message", async () => {
     const r = seedRequest();
     const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -357,6 +380,29 @@ describe("POST /api/admin/requests/:id/decision", () => {
       headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
     }));
     expect(res.status).toBe(404);
+  });
+
+  test("admin CANNOT decide their OWN request → 403", async () => {
+    const r = seedRequest("boss@kokilmetal.com.tr");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST",
+      body: acceptForm(),
+      headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(403);
+    // No state change
+    expect(repo.getRequest(r.id)?.status).toBe("new");
+  });
+
+  test("admin CAN decide someone else's request → 204 (regression)", async () => {
+    const r = seedRequest("ali@kokilmetal.com.tr");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST",
+      body: acceptForm(),
+      headers: { cookie: adminCookie(), "x-csrf-token": "tok" },
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("accepted");
   });
 
   test("mail sent to requester after decision", async () => {

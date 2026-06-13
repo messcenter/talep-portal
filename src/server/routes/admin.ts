@@ -38,6 +38,10 @@ export async function handleAdmin(
     if (!Number.isInteger(id)) return json({ error: "not found" }, 404, extraHeaders);
     const r = deps.repo.getRequest(id);
     if (!r) return json({ error: "not found" }, 404, extraHeaders);
+    // Separation of duties: an admin may not clarify/decide their OWN request.
+    if (r.requester_email.toLowerCase() === user.email.toLowerCase()) {
+      return json({ error: "Kendi talebinizde yönetici işlemi yapamazsınız" }, 403, extraHeaders);
+    }
     const form = await parseForm(req);
     const parsed = messageSchema.safeParse(form);
     if (!parsed.success) {
@@ -79,6 +83,10 @@ export async function handleAdmin(
     if (!Number.isInteger(id)) return json({ error: "not found" }, 404, extraHeaders);
     const r = deps.repo.getRequest(id);
     if (!r) return json({ error: "not found" }, 404, extraHeaders);
+    // Separation of duties: an admin may not clarify/decide their OWN request.
+    if (r.requester_email.toLowerCase() === user.email.toLowerCase()) {
+      return json({ error: "Kendi talebinizde yönetici işlemi yapamazsınız" }, 403, extraHeaders);
+    }
     const form = await parseForm(req);
     const parsed = decisionSchema.safeParse(form);
     if (!parsed.success) {
