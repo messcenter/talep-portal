@@ -3,6 +3,7 @@ import type { Database } from "bun:sqlite";
 import { formatRequestNo } from "../domain/request-no";
 import { canTransition, type RequestStatus } from "../domain/status";
 import type { NewRequestInput } from "../domain/validation";
+import type { StatsRow } from "../domain/stats";
 
 export type RequestRow = {
   id: number;
@@ -149,6 +150,20 @@ export function makeRepo(db: Database) {
           `SELECT * FROM requests ${where} ORDER BY id DESC`,
         )
         .all(params);
+    },
+
+    /** Every request with its last-activity timestamp (latest message, else created_at). */
+    listForStats(): StatsRow[] {
+      return db
+        .query<StatsRow, []>(
+          `SELECT r.id, r.request_no, r.title, r.status, r.priority, r.created_at,
+                  COALESCE(MAX(m.created_at), r.created_at) AS last_activity_at
+           FROM requests r
+           LEFT JOIN messages m ON m.request_id = r.id
+           GROUP BY r.id
+           ORDER BY r.id DESC`,
+        )
+        .all();
     },
 
     addMessage(

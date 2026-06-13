@@ -91,6 +91,64 @@ function seedRequest(email = "a@kokilmetal.com.tr") {
   );
 }
 
+// ─── GET /api/admin/stats ─────────────────────────────────────────────────────
+
+describe("GET /api/admin/stats", () => {
+  test("non-admin → 403", async () => {
+    const res = await handler(new Request("http://x/api/admin/stats", {
+      headers: { cookie: userCookie() },
+    }));
+    expect(res.status).toBe(403);
+  });
+
+  test("admin → 200 with status/priority breakdown and aged list", async () => {
+    const r1 = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "Eski talep", description: "x",
+        expected_benefit: "y", priority: "high" },
+      "2026-01-01T00:00:00.000Z",
+    );
+    repo.createRequest(
+      { requester_name: "B", requester_email: "b@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "bug", title: "Yeni talep", description: "x",
+        expected_benefit: "y", priority: "medium" },
+      "2026-01-01T00:00:00.000Z",
+    );
+
+    const res = await handler(new Request("http://x/api/admin/stats", {
+      headers: { cookie: adminCookie() },
+    }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.total).toBe(2);
+    expect(body.open).toBe(2);
+    expect(body.byStatus.new).toBe(2);
+    expect(body.openByPriority).toEqual({ low: 0, medium: 1, high: 1 });
+    expect(body.agedCount).toBe(0);
+    expect(Array.isArray(body.aged)).toBe(true);
+  });
+
+  test("last_activity follows latest message, not created_at", async () => {
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "Hareketli", description: "x",
+        expected_benefit: "y", priority: "low" },
+      "2025-01-01T00:00:00.000Z",
+    );
+    repo.addMessageAndTransition(r.id, { role: "admin", body: "Soru?" }, "clarifying", "2026-01-01T00:00:00.000Z");
+
+    const res = await handler(new Request("http://x/api/admin/stats", {
+      headers: { cookie: adminCookie() },
+    }));
+    const body = await res.json() as any;
+    expect(body.agedCount).toBe(0);
+    expect(body.byStatus.clarifying).toBe(1);
+  });
+});
+
 // ─── GET /api/admin/requests ──────────────────────────────────────────────────
 
 describe("GET /api/admin/requests", () => {

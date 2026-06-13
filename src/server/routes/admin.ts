@@ -8,6 +8,7 @@ import type { Deps } from "../handler";
 import { parseForm } from "./requests";
 import { questionRequester, decisionRequester } from "../../mail/templates";
 import { requestToMarkdown } from "../../domain/export";
+import { buildDashboardStats } from "../../domain/stats";
 
 /**
  * Dispatcher for all /api/admin/* routes.
@@ -29,6 +30,13 @@ export async function handleAdmin(
     const status = url.searchParams.get("status") ?? undefined;
     const rows = deps.repo.listAll({ status });
     return json(rows, 200, extraHeaders);
+  }
+
+  // GET /api/admin/stats
+  if (path === "/api/admin/stats" && method === "GET") {
+    if (!user.isAdmin) return json({ error: "Yetkisiz" }, 403, extraHeaders);
+    const stats = buildDashboardStats(deps.repo.listForStats(), deps.now());
+    return json(stats, 200, extraHeaders);
   }
 
   // GET /api/admin/requests/:id/export.md
