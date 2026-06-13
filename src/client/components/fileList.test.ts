@@ -14,6 +14,14 @@ test("formatFileSize: megabytes with one decimal", () => {
   expect(formatFileSize(5 * 1024 * 1024)).toBe("5.0 MB");
 });
 
+test("formatFileSize: zero bytes", () => {
+  expect(formatFileSize(0)).toBe("0 B");
+});
+
+test("formatFileSize: exactly 1024 bytes rolls to KB", () => {
+  expect(formatFileSize(1024)).toBe("1.0 KB");
+});
+
 test("removeFileAt: drops only the file at the given index", () => {
   const a = new File(["a"], "a.txt");
   const b = new File(["b"], "b.txt");
