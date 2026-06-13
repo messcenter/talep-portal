@@ -22,10 +22,10 @@ export interface RequestRow {
   status: RequestStatus;
 }
 
-export function RequestCard({ r }: { r: RequestRow }) {
+export function RequestCard({ r, basePath = "/requests" }: { r: RequestRow; basePath?: string }) {
   return (
     <Link
-      to={`/requests/${r.id}`}
+      to={`${basePath}/${r.id}`}
       className="block border border-border-subtle rounded-lg p-4 bg-white hover:bg-surface-tonal transition-colors no-underline"
     >
       {/* Top row: request_no + title | StatusBadge */}
