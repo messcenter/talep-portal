@@ -291,13 +291,15 @@ export function NewRequest() {
             </div>
 
             <div>
-              <FieldLabel htmlFor="files">Ekler</FieldLabel>
+              <span className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">
+                Ekler
+              </span>
               <FileDropField name="files" disabled={submitting} />
             </div>
           </section>
 
           {/* ---- Submit ---- */}
-          <div className="flex justify-end pt-5 mt-5 border-t border-border-subtle">
+          <div className="flex justify-end pt-5 border-t border-border-subtle">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>
               {submitting ? "Gönderiliyor…" : "Talep Gönder"}
             </Button>
