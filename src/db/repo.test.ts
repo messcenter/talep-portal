@@ -92,6 +92,18 @@ describe("repo listing", () => {
     repo.createRequest({ ...baseInput, requester_email: "b@kokilmetal.com.tr" }, "t");
     expect(repo.listByEmail("a@kokilmetal.com.tr").length).toBe(1);
   });
+  test("listByEmail exposes last_activity_at: created_at with no messages, latest message otherwise", () => {
+    const r = repo.createRequest(baseInput, "2026-06-10T00:00:00Z");
+    // No messages yet → last_activity_at falls back to created_at.
+    expect(repo.listByEmail("a@kokilmetal.com.tr")[0].last_activity_at).toBe(
+      "2026-06-10T00:00:00Z",
+    );
+    // A later message advances last_activity_at.
+    repo.addMessage(r.id, "admin", "soru", "2026-06-12T00:00:00Z");
+    expect(repo.listByEmail("a@kokilmetal.com.tr")[0].last_activity_at).toBe(
+      "2026-06-12T00:00:00Z",
+    );
+  });
   test("listAll filters by status", () => {
     const r = repo.createRequest(baseInput, "t");
     repo.createRequest(baseInput, "t");

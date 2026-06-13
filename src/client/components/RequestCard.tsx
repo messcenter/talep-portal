@@ -20,6 +20,20 @@ export interface RequestRow {
   expected_benefit: string;
   priority: string;
   status: RequestStatus;
+  last_activity_at?: string;
+}
+
+/** "10 Haz 2026" — short Turkish date, no time. */
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 export function RequestCard({ r, basePath = "/requests" }: { r: RequestRow; basePath?: string }) {
@@ -51,6 +65,17 @@ export function RequestCard({ r, basePath = "/requests" }: { r: RequestRow; base
           <>
             <span>·</span>
             <span>{r.module_area}</span>
+          </>
+        )}
+      </div>
+
+      {/* Third row: created date · last activity */}
+      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-on-surface-variant">
+        <span>Açıldı: {formatDate(r.created_at)}</span>
+        {r.last_activity_at && (
+          <>
+            <span>·</span>
+            <span>Son hareket: {formatDate(r.last_activity_at)}</span>
           </>
         )}
       </div>

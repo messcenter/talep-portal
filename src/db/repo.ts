@@ -20,6 +20,8 @@ export type RequestRow = {
   expected_benefit: string;
   priority: string;
   status: RequestStatus;
+  /** Latest message timestamp, else created_at. Populated only by listByEmail. */
+  last_activity_at?: string;
 };
 
 export type MessageRow = {
@@ -123,7 +125,12 @@ export function makeRepo(db: Database) {
     listByEmail(email: string): RequestRow[] {
       return db
         .query<RequestRow, [string]>(
-          "SELECT * FROM requests WHERE requester_email = ? ORDER BY id DESC",
+          `SELECT r.*, COALESCE(MAX(m.created_at), r.created_at) AS last_activity_at
+           FROM requests r
+           LEFT JOIN messages m ON m.request_id = r.id
+           WHERE r.requester_email = ?
+           GROUP BY r.id
+           ORDER BY r.id DESC`,
         )
         .all(email);
     },
