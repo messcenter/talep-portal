@@ -44,6 +44,11 @@ function seedSchema(db: Database): Database {
       created_at TEXT NOT NULL,
       UNIQUE(department_id, name)
     );
+    CREATE TABLE applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
   `);
   return db;
 }
@@ -217,5 +222,33 @@ describe("departments + modules", () => {
     const d = repo.createDepartment("Satış", "2026-01-01T00:00:00Z");
     repo.createModule(d.id, "CRM", "2026-01-01T00:00:00Z");
     expect(() => repo.createModule(d.id, "CRM", "2026-01-01T00:00:00Z")).toThrow();
+  });
+});
+
+describe("applications CRUD", () => {
+  test("create + list returns the application", () => {
+    const a = repo.createApplication("ERP", "2026-01-01T00:00:00.000Z");
+    expect(a.id).toBeGreaterThan(0);
+    expect(a.name).toBe("ERP");
+    expect(repo.listApplications().map((x) => x.name)).toEqual(["ERP"]);
+  });
+
+  test("list is alphabetical", () => {
+    repo.createApplication("MES", "2026-01-01T00:00:00.000Z");
+    repo.createApplication("CRM", "2026-01-01T00:00:00.000Z");
+    expect(repo.listApplications().map((x) => x.name)).toEqual(["CRM", "MES"]);
+  });
+
+  test("duplicate name throws (UNIQUE)", () => {
+    repo.createApplication("ERP", "2026-01-01T00:00:00.000Z");
+    expect(() => repo.createApplication("ERP", "2026-01-01T00:00:00.000Z")).toThrow();
+  });
+
+  test("getApplication + deleteApplication", () => {
+    const a = repo.createApplication("ERP", "2026-01-01T00:00:00.000Z");
+    expect(repo.getApplication(a.id)?.name).toBe("ERP");
+    repo.deleteApplication(a.id);
+    expect(repo.getApplication(a.id)).toBeNull();
+    expect(repo.listApplications()).toEqual([]);
   });
 });

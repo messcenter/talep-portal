@@ -66,5 +66,11 @@ function migrate(db: Database): void {
       UNIQUE(department_id, name)
     );
     CREATE INDEX IF NOT EXISTS idx_modules_department ON modules(department_id);
+
+    CREATE TABLE IF NOT EXISTS applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
   `);
 }

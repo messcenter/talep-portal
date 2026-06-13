@@ -52,6 +52,7 @@ export type CreateRequestInput = NewRequestInput & {
 };
 
 export type Department = { id: number; name: string; created_at: string };
+export type Application = { id: number; name: string; created_at: string };
 export type ModuleRow = { id: number; department_id: number; name: string; created_at: string };
 export type DepartmentWithModules = { id: number; name: string; modules: { id: number; name: string }[] };
 
@@ -259,6 +260,21 @@ export function makeRepo(db: Database) {
         modules: db.query(`SELECT id, name FROM modules WHERE department_id = ? ORDER BY name`)
           .all(d.id) as { id: number; name: string }[],
       }));
+    },
+
+    createApplication(name: string, createdAt: string): Application {
+      return db.query(
+        `INSERT INTO applications (name, created_at) VALUES (?, ?) RETURNING *`,
+      ).get(name, createdAt) as Application;
+    },
+    deleteApplication(id: number): void {
+      db.query(`DELETE FROM applications WHERE id = ?`).run(id);
+    },
+    getApplication(id: number): Application | null {
+      return (db.query(`SELECT * FROM applications WHERE id = ?`).get(id) as Application) ?? null;
+    },
+    listApplications(): Application[] {
+      return db.query(`SELECT * FROM applications ORDER BY name`).all() as Application[];
     },
 
     addMessageAndTransition(
