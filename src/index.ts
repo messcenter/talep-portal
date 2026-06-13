@@ -17,7 +17,6 @@ const handler = makeHandler({ config, repo, mailer, storage, now: () => new Date
 // __dirname is not available in ESM; use import.meta.dir instead.
 const publicDir = join(import.meta.dir, "..", "public");
 const spaShell = Bun.file(join(publicDir, "index.html"));
-const clientJs = Bun.file(join(publicDir, "client.js"));
 const appCss = Bun.file(join(publicDir, "app.css"));
 
 Bun.serve({
@@ -39,14 +38,30 @@ Bun.serve({
     // Admin detail deep-link; different prefix from /requests/:id/attachments/...
     "/admin/requests/:id": spaShell,
 
-    // Pre-built client bundle and compiled CSS.
-    "/client.js": clientJs,
+    // Compiled CSS. The split client bundle (entry main.js + hashed chunk-*.js)
+    // is served by the fetch handler below, since chunk names are not known here.
     "/app.css": appCss,
   },
 
   // Everything else: API, auth, logout, attachments, and any remaining GET
   // that browsers navigate to (history API deep links not covered by routes above).
   fetch: async (req) => {
+    // Serve the split client bundle: entry `main.js` plus hashed `chunk-*.js`
+    // files emitted by `bun build --splitting`. The pattern matches a single
+    // path segment ending in `.js` (no "/"), so it cannot traverse outside
+    // publicDir; non-existent names fall through to the API handler / 404.
+    if (req.method === "GET") {
+      const { pathname } = new URL(req.url);
+      if (/^\/[\w.-]+\.js$/.test(pathname)) {
+        const file = Bun.file(join(publicDir, pathname.slice(1)));
+        if (await file.exists()) {
+          return new Response(file, {
+            headers: { "content-type": "text/javascript; charset=utf-8" },
+          });
+        }
+      }
+    }
+
     const res = await handler(req);
 
     // SPA fallback: if the backend returned 404 and the browser is requesting

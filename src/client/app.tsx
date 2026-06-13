@@ -1,16 +1,38 @@
 // src/client/app.tsx
+import { lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useUser } from "./auth";
 import { AuthGate } from "./layouts/AuthGate";
 import { EmployeeLayout } from "./layouts/EmployeeLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { Login } from "./pages/Login";
-import { NewRequest } from "./pages/NewRequest";
-import { MyList } from "./pages/MyList";
-import { RequestDetailEmployee } from "./pages/RequestDetailEmployee";
-import { RequestDetailAdmin } from "./pages/RequestDetailAdmin";
-import { Admin } from "./pages/Admin";
-import { Definitions } from "./pages/Definitions";
+
+// Route pages are code-split: the heavy editor stack (TipTap/ProseMirror) and the
+// markdown renderer load only when their route is visited, not on first paint.
+// Login stays eager so the most common entry point paints without a chunk fetch.
+// Pages are named exports → adapt to lazy()'s default-export contract.
+const NewRequest = lazy(() =>
+  import("./pages/NewRequest").then((m) => ({ default: m.NewRequest })),
+);
+const MyList = lazy(() =>
+  import("./pages/MyList").then((m) => ({ default: m.MyList })),
+);
+const RequestDetailEmployee = lazy(() =>
+  import("./pages/RequestDetailEmployee").then((m) => ({
+    default: m.RequestDetailEmployee,
+  })),
+);
+const RequestDetailAdmin = lazy(() =>
+  import("./pages/RequestDetailAdmin").then((m) => ({
+    default: m.RequestDetailAdmin,
+  })),
+);
+const Admin = lazy(() =>
+  import("./pages/Admin").then((m) => ({ default: m.Admin })),
+);
+const Definitions = lazy(() =>
+  import("./pages/Definitions").then((m) => ({ default: m.Definitions })),
+);
 
 function Home() {
   const user = useUser();

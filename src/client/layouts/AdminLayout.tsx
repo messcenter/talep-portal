@@ -1,7 +1,9 @@
 // src/client/layouts/AdminLayout.tsx
 // Admin-gated console chrome: left sidebar with nav + user/logout.
+import { Suspense } from "react";
 import { NavLink, Outlet, Navigate } from "react-router-dom";
 import { useUser } from "../auth";
+import { Spinner } from "../components/Spinner";
 
 const sideLink = ({ isActive }: { isActive: boolean }) =>
   [
@@ -56,7 +58,9 @@ export function AdminLayout() {
         </div>
       </aside>
       <div className="flex-1 min-w-0">
-        <Outlet />
+        <Suspense fallback={<Spinner />}>
+          <Outlet />
+        </Suspense>
       </div>
     </div>
   );

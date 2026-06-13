@@ -1,7 +1,9 @@
 // src/client/layouts/EmployeeLayout.tsx
 // Employee-facing chrome: top header with brand + nav + user/logout.
+import { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useUser } from "../auth";
+import { Spinner } from "../components/Spinner";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -57,7 +59,9 @@ export function EmployeeLayout() {
           </div>
         </div>
       </header>
-      <Outlet />
+      <Suspense fallback={<Spinner />}>
+        <Outlet />
+      </Suspense>
     </div>
   );
 }
