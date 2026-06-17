@@ -121,9 +121,16 @@ export async function handleAdmin(
       const errors = parsed.error.issues.map((i) => i.message);
       return json({ errors }, 400, extraHeaders);
     }
-    const target = parsed.data.decision === "accept" ? "accepted" : "rejected";
+    const DECISION_TARGET = {
+      accept: "accepted",
+      reject: "rejected",
+      start: "in_progress",
+      complete: "done",
+      cancel: "cancelled",
+    } as const;
+    const target = DECISION_TARGET[parsed.data.decision];
     if (!canTransition(r.status, target)) {
-      return json({ error: "Bu talep zaten kapalı" }, 409, extraHeaders);
+      return json({ error: "Bu talep için geçersiz işlem" }, 409, extraHeaders);
     }
     deps.repo.addMessageAndTransition(
       r.id,
@@ -131,9 +138,11 @@ export async function handleAdmin(
       target,
       deps.now(),
     );
-    // Best-effort mail to requester.
-    const dMail = decisionRequester(r, deps.config.appBaseUrl, target, parsed.data.reason);
-    deps.mailer.send(r.requester_email, dMail.subject, dMail.html, dMail.text).catch(() => {});
+    // Best-effort mail to requester — in_progress is intentionally silent.
+    if (target !== "in_progress") {
+      const dMail = decisionRequester(r, deps.config.appBaseUrl, target, parsed.data.reason);
+      deps.mailer.send(r.requester_email, dMail.subject, dMail.html, dMail.text).catch(() => {});
+    }
     const resHeaders = new Headers({ ...extraHeaders });
     return new Response(null, { status: 204, headers: resHeaders });
   }

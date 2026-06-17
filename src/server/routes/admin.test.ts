@@ -495,6 +495,68 @@ describe("POST /api/admin/requests/:id/decision", () => {
     }));
     expect(sent.some((m) => m.to === "a@kokilmetal.com.tr")).toBe(true);
   });
+
+  function decisionForm(decision: string, reason?: string) {
+    const fd = new FormData();
+    fd.set("decision", decision);
+    if (reason !== undefined) fd.set("reason", reason);
+    return fd;
+  }
+  const adminHdr = { cookie: adminCookie(), "x-csrf-token": "tok" };
+
+  test("start: accepted → 204, status='in_progress', NO mail", async () => {
+    const r = seedRequest();
+    repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
+    sent = [];
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: decisionForm("start"),
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("in_progress");
+    expect(sent.length).toBe(0);
+  });
+
+  test("complete: in_progress → 204, status='done', mail sent", async () => {
+    const r = seedRequest();
+    repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
+    repo.addMessageAndTransition(r.id, null, "in_progress", "2026-01-01T00:00:00.000Z");
+    sent = [];
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: decisionForm("complete"),
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("done");
+    expect(sent.some((m) => m.subject.includes("tamamlandı"))).toBe(true);
+  });
+
+  test("cancel without reason → 400", async () => {
+    const r = seedRequest();
+    repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: decisionForm("cancel"),
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  test("cancel with reason: accepted → 204, status='cancelled', mail sent", async () => {
+    const r = seedRequest();
+    repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
+    sent = [];
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: decisionForm("cancel", "yapılamadı"),
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("cancelled");
+    expect(sent.some((m) => m.subject.includes("iptal edildi"))).toBe(true);
+  });
+
+  test("start from 'new' (pre-decision) → 409", async () => {
+    const r = seedRequest();
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: decisionForm("start"),
+    }));
+    expect(res.status).toBe(409);
+  });
 });
 
 // ─── GET /api/admin/requests/:id/export.md ───────────────────────────────────
