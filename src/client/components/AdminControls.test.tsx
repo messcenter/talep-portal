@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { adminActionsFor } from "./AdminControls";
+import { adminActionsFor } from "./adminActions";
 
 test("pre-decision statuses expose clarify/accept/reject", () => {
   for (const s of ["new", "clarifying", "answered"] as const) {

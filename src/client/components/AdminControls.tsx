@@ -16,23 +16,7 @@ import { type RequestStatus } from "../../domain/status";
 import { RichTextEditor } from "./RichTextEditor";
 import { FilePicker } from "./FilePicker";
 import { useToast } from "./Toast";
-
-export type AdminAction = "clarify" | "accept" | "reject" | "start" | "complete" | "cancel";
-
-export function adminActionsFor(status: RequestStatus): AdminAction[] {
-  switch (status) {
-    case "new":
-    case "clarifying":
-    case "answered":
-      return ["clarify", "accept", "reject"];
-    case "accepted":
-      return ["start", "complete", "cancel"];
-    case "in_progress":
-      return ["complete", "cancel"];
-    default:
-      return [];
-  }
-}
+import { adminActionsFor } from "./adminActions";
 
 // ---- Clarification message form ----
 
