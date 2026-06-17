@@ -136,10 +136,7 @@ function DecisionForm({
   const [rejectReason, setRejectReason] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
 
-  async function decide(
-    decision: "accept" | "reject" | "start" | "complete" | "cancel",
-    reason?: string,
-  ) {
+  async function decide(decision: "accept" | "reject", reason?: string) {
     setSubmitting(true);
     setErrorMsg(null);
     const fd = new FormData();
@@ -369,6 +366,7 @@ export function AdminControls({
     );
   }
 
+  // pre-decision (new/clarifying/answered): clarify + accept/reject
   if (actions.includes("clarify")) {
     return (
       <div className="mt-6 border-t border-border-subtle pt-6 flex flex-col gap-4">
@@ -378,6 +376,7 @@ export function AdminControls({
     );
   }
 
+  // post-acceptance (accepted/in_progress): start/complete/cancel
   return (
     <div className="mt-6 border-t border-border-subtle pt-6 flex flex-col gap-4">
       <ProgressForm requestId={requestId} status={status} onDone={onDone} />
