@@ -19,13 +19,16 @@ function Spinner() {
   );
 }
 
-// "Hepsi" (no filter) + the 5 statuses.
+// "Hepsi" (no filter) + all statuses.
 const STATUSES: RequestStatus[] = [
   "new",
   "clarifying",
   "answered",
   "accepted",
+  "in_progress",
+  "done",
   "rejected",
+  "cancelled",
 ];
 
 export function Admin() {

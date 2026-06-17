@@ -10,13 +10,18 @@ import { PRIORITY_LABEL } from "../labels";
 import { StatusBadge } from "../components/StatusBadge";
 import { Spinner } from "../components/Spinner";
 
-const STATUS_ORDER: RequestStatus[] = ["new", "clarifying", "answered", "accepted", "rejected"];
+const STATUS_ORDER: RequestStatus[] = [
+  "new", "clarifying", "answered", "accepted", "in_progress", "done", "rejected", "cancelled",
+];
 const STATUS_BAR: Record<RequestStatus, string> = {
   new: "bg-status-yeni",
   clarifying: "bg-status-netlestiriliyor",
   answered: "bg-status-netlestiriliyor",
   accepted: "bg-status-kabul",
+  in_progress: "bg-status-yapiliyor",
+  done: "bg-status-tamam",
   rejected: "bg-status-ret",
+  cancelled: "bg-status-iptal",
 };
 
 const PRIORITY_ORDER: Priority[] = ["high", "medium", "low"];
