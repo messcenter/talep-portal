@@ -40,7 +40,7 @@ describe("buildDashboardStats", () => {
     expect(s.total).toBe(0);
     expect(s.open).toBe(0);
     expect(s.agedCount).toBe(0);
-    expect(s.byStatus).toEqual({ new: 0, clarifying: 0, answered: 0, accepted: 0, rejected: 0 });
+    expect(s.byStatus).toEqual({ new: 0, clarifying: 0, answered: 0, accepted: 0, in_progress: 0, done: 0, rejected: 0, cancelled: 0 });
     expect(s.openByPriority).toEqual({ low: 0, medium: 0, high: 0 });
     expect(s.aged).toEqual([]);
   });
@@ -57,8 +57,8 @@ describe("buildDashboardStats", () => {
       NOW,
     );
     expect(s.total).toBe(5);
-    expect(s.byStatus).toEqual({ new: 1, clarifying: 1, answered: 1, accepted: 1, rejected: 1 });
-    expect(s.open).toBe(3); // new + clarifying + answered
+    expect(s.byStatus).toEqual({ new: 1, clarifying: 1, answered: 1, accepted: 1, in_progress: 0, done: 0, rejected: 1, cancelled: 0 });
+    expect(s.open).toBe(3); // new + clarifying + answered (accepted/in_progress are execution-phase, not "open for clarification")
   });
 
   test("openByPriority counts only non-terminal requests", () => {
@@ -66,11 +66,12 @@ describe("buildDashboardStats", () => {
       [
         row({ id: 1, status: "new", priority: "high" }),
         row({ id: 2, status: "clarifying", priority: "medium" }),
-        row({ id: 3, status: "accepted", priority: "high" }), // terminal → excluded
+        row({ id: 3, status: "accepted", priority: "high" }), // non-terminal → included
+        row({ id: 4, status: "rejected", priority: "high" }), // terminal → excluded
       ],
       NOW,
     );
-    expect(s.openByPriority).toEqual({ low: 0, medium: 1, high: 1 });
+    expect(s.openByPriority).toEqual({ low: 0, medium: 1, high: 2 });
   });
 
   test("aged: only open rows past threshold; boundary is >= 7 days", () => {
@@ -78,7 +79,7 @@ describe("buildDashboardStats", () => {
       [
         row({ id: 1, status: "new", last_activity_at: "2026-06-06T00:00:00.000Z" }), // 7 days → aged
         row({ id: 2, status: "clarifying", last_activity_at: "2026-06-07T00:00:00.000Z" }), // 6 days → not
-        row({ id: 3, status: "accepted", last_activity_at: "2026-01-01T00:00:00.000Z" }), // terminal → excluded
+        row({ id: 3, status: "rejected", last_activity_at: "2026-01-01T00:00:00.000Z" }), // terminal → excluded
       ],
       NOW,
     );
@@ -102,6 +103,22 @@ describe("buildDashboardStats", () => {
   test("unknown status value does not poison known status counts", () => {
     const s = buildDashboardStats([row({ status: "weird" as any })], NOW);
     expect(s.total).toBe(1);
-    expect(s.byStatus).toEqual({ new: 0, clarifying: 0, answered: 0, accepted: 0, rejected: 0 });
+    expect(s.byStatus).toEqual({ new: 0, clarifying: 0, answered: 0, accepted: 0, in_progress: 0, done: 0, rejected: 0, cancelled: 0 });
+  });
+
+  test("new statuses are counted in byStatus and excluded from open", () => {
+    const rows: StatsRow[] = [
+      { id: 1, request_no: "T-1", title: "a", status: "in_progress", priority: "low",
+        created_at: "2026-06-01T00:00:00.000Z", last_activity_at: "2026-06-01T00:00:00.000Z" },
+      { id: 2, request_no: "T-2", title: "b", status: "done", priority: "low",
+        created_at: "2026-06-01T00:00:00.000Z", last_activity_at: "2026-06-01T00:00:00.000Z" },
+      { id: 3, request_no: "T-3", title: "c", status: "cancelled", priority: "low",
+        created_at: "2026-06-01T00:00:00.000Z", last_activity_at: "2026-06-01T00:00:00.000Z" },
+    ];
+    const s = buildDashboardStats(rows, "2026-06-17T00:00:00.000Z");
+    expect(s.byStatus.in_progress).toBe(1);
+    expect(s.byStatus.done).toBe(1);
+    expect(s.byStatus.cancelled).toBe(1);
+    expect(s.open).toBe(0); // in_progress/done/cancelled are not new/clarifying/answered
   });
 });

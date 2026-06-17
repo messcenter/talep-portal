@@ -45,7 +45,8 @@ function isPriority(p: string): p is Priority {
 
 export function buildDashboardStats(rows: StatsRow[], nowIso: string): DashboardStats {
   const byStatus: Record<RequestStatus, number> = {
-    new: 0, clarifying: 0, answered: 0, accepted: 0, rejected: 0,
+    new: 0, clarifying: 0, answered: 0, accepted: 0,
+    in_progress: 0, done: 0, rejected: 0, cancelled: 0,
   };
   const openByPriority: Record<Priority, number> = { low: 0, medium: 0, high: 0 };
   const aged: AgedItem[] = [];
