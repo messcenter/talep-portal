@@ -34,6 +34,9 @@ export function AdminLayout() {
           <NavLink to="/admin/talepler" className={sideLink}>
             Tüm Talepler
           </NavLink>
+          <NavLink to="/admin/pano" className={sideLink}>
+            Pano
+          </NavLink>
           <NavLink to="/admin/tanimlar" className={sideLink}>
             Tanımlar
           </NavLink>
