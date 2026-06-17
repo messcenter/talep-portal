@@ -5,13 +5,16 @@ import { type RequestStatus } from "../domain/status";
 import type { RequestRow } from "./components/RequestCard";
 
 /** Active (non-terminal) statuses shown as board columns, in workflow order. */
-export const BOARD_COLUMNS: RequestStatus[] = [
+export const BOARD_COLUMNS = [
   "new",
   "clarifying",
   "answered",
   "accepted",
   "in_progress",
-];
+] as const satisfies readonly RequestStatus[];
+
+/** One of the active statuses rendered as a board column. */
+export type BoardStatus = (typeof BOARD_COLUMNS)[number];
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
@@ -32,11 +35,14 @@ function boardSort(a: RequestRow, b: RequestRow): number {
 }
 
 /**
- * Group rows into one sorted bucket per BOARD_COLUMNS entry (index-aligned).
- * Terminal/unknown statuses are dropped.
+ * Group rows into one sorted bucket keyed by each active board status.
+ * Keyed (not positional) so callers read `columns[status]` — no index coupling.
+ * Terminal/unknown statuses are dropped (no key for them).
  */
-export function groupForBoard(rows: RequestRow[]): RequestRow[][] {
-  return BOARD_COLUMNS.map((status) =>
-    rows.filter((r) => r.status === status).sort(boardSort),
-  );
+export function groupForBoard(rows: RequestRow[]): Record<BoardStatus, RequestRow[]> {
+  const columns = {} as Record<BoardStatus, RequestRow[]>;
+  for (const status of BOARD_COLUMNS) {
+    columns[status] = rows.filter((r) => r.status === status).sort(boardSort);
+  }
+  return columns;
 }

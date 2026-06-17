@@ -45,27 +45,30 @@ function BoardInner() {
 
       {columns && (
         <div className="flex gap-4 overflow-x-auto pb-2">
-          {BOARD_COLUMNS.map((status, i) => (
-            <section key={status} className="w-72 shrink-0">
-              <div className="mb-3 flex items-center justify-between px-1">
-                <h2 className="text-sm font-semibold text-on-surface">
-                  {statusLabelTr(status)}
-                </h2>
-                <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-medium tabular-nums text-on-surface-variant">
-                  {columns[i].length}
-                </span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {columns[i].length === 0 ? (
-                  <p className="px-1 py-6 text-center text-sm text-on-surface-variant/70">—</p>
-                ) : (
-                  columns[i].map((r) => (
-                    <RequestCard key={r.id} r={r} basePath="/admin/requests" showStatus={false} />
-                  ))
-                )}
-              </div>
-            </section>
-          ))}
+          {BOARD_COLUMNS.map((status) => {
+            const cards = columns[status];
+            return (
+              <section key={status} className="w-72 shrink-0">
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <h2 className="text-sm font-semibold text-on-surface">
+                    {statusLabelTr(status)}
+                  </h2>
+                  <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-medium tabular-nums text-on-surface-variant">
+                    {cards.length}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {cards.length === 0 ? (
+                    <p className="px-1 py-6 text-center text-sm text-on-surface-variant/70">Talep yok</p>
+                  ) : (
+                    cards.map((r) => (
+                      <RequestCard key={r.id} r={r} basePath="/admin/requests" showStatus={false} />
+                    ))
+                  )}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </main>

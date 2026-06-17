@@ -35,22 +35,24 @@ describe("BOARD_COLUMNS", () => {
 });
 
 describe("groupForBoard", () => {
-  test("returns one bucket per column, aligned to BOARD_COLUMNS", () => {
+  test("returns one bucket per active status, all empty for empty input", () => {
     const cols = groupForBoard([]);
-    expect(cols.length).toBe(BOARD_COLUMNS.length);
-    expect(cols.every((c) => c.length === 0)).toBe(true);
+    expect(Object.keys(cols).sort()).toEqual([...BOARD_COLUMNS].sort());
+    expect(BOARD_COLUMNS.every((s) => cols[s].length === 0)).toBe(true);
   });
 
-  test("places each active row in its status column", () => {
+  test("places each active row in its status column, leaving others empty", () => {
     const rows = [
       row({ id: 1, status: "new" }),
       row({ id: 2, status: "answered" }),
       row({ id: 3, status: "in_progress" }),
     ];
     const cols = groupForBoard(rows);
-    expect(cols[0].map((r) => r.id)).toEqual([1]); // new
-    expect(cols[2].map((r) => r.id)).toEqual([2]); // answered
-    expect(cols[4].map((r) => r.id)).toEqual([3]); // in_progress
+    expect(cols.new.map((r) => r.id)).toEqual([1]);
+    expect(cols.answered.map((r) => r.id)).toEqual([2]);
+    expect(cols.in_progress.map((r) => r.id)).toEqual([3]);
+    expect(cols.clarifying).toEqual([]);
+    expect(cols.accepted).toEqual([]);
   });
 
   test("drops terminal rows (done/rejected/cancelled)", () => {
@@ -61,9 +63,9 @@ describe("groupForBoard", () => {
       row({ id: 4, status: "cancelled" }),
     ];
     const cols = groupForBoard(rows);
-    const total = cols.reduce((n, c) => n + c.length, 0);
+    const total = BOARD_COLUMNS.reduce((n, s) => n + cols[s].length, 0);
     expect(total).toBe(1);
-    expect(cols[0].map((r) => r.id)).toEqual([1]);
+    expect(cols.new.map((r) => r.id)).toEqual([1]);
   });
 
   test("sorts a column by priority (high first), then oldest activity first", () => {
@@ -73,7 +75,7 @@ describe("groupForBoard", () => {
       row({ id: 3, status: "new", priority: "high", last_activity_at: "2026-06-03T00:00:00.000Z" }),
     ];
     const cols = groupForBoard(rows);
-    expect(cols[0].map((r) => r.id)).toEqual([3, 2, 1]);
+    expect(cols.new.map((r) => r.id)).toEqual([3, 2, 1]);
   });
 
   test("orders all three priority ranks: high < medium < low", () => {
@@ -83,7 +85,7 @@ describe("groupForBoard", () => {
       row({ id: 3, status: "new", priority: "medium" }),
     ];
     const cols = groupForBoard(rows);
-    expect(cols[0].map((r) => r.id)).toEqual([2, 3, 1]);
+    expect(cols.new.map((r) => r.id)).toEqual([2, 3, 1]);
   });
 
   test("falls back to created_at when last_activity_at is absent", () => {
@@ -92,6 +94,6 @@ describe("groupForBoard", () => {
       row({ id: 2, status: "new", priority: "high", created_at: "2026-06-01T00:00:00.000Z", last_activity_at: undefined }),
     ];
     const cols = groupForBoard(rows);
-    expect(cols[0].map((r) => r.id)).toEqual([2, 1]);
+    expect(cols.new.map((r) => r.id)).toEqual([2, 1]);
   });
 });
