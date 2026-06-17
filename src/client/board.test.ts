@@ -76,6 +76,16 @@ describe("groupForBoard", () => {
     expect(cols[0].map((r) => r.id)).toEqual([3, 2, 1]);
   });
 
+  test("orders all three priority ranks: high < medium < low", () => {
+    const rows = [
+      row({ id: 1, status: "new", priority: "low" }),
+      row({ id: 2, status: "new", priority: "high" }),
+      row({ id: 3, status: "new", priority: "medium" }),
+    ];
+    const cols = groupForBoard(rows);
+    expect(cols[0].map((r) => r.id)).toEqual([2, 3, 1]);
+  });
+
   test("falls back to created_at when last_activity_at is absent", () => {
     const rows = [
       row({ id: 1, status: "new", priority: "high", created_at: "2026-06-09T00:00:00.000Z", last_activity_at: undefined }),

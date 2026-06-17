@@ -24,7 +24,11 @@ function boardSort(a: RequestRow, b: RequestRow): number {
   const pa = PRIORITY_RANK[a.priority] ?? 3;
   const pb = PRIORITY_RANK[b.priority] ?? 3;
   if (pa !== pb) return pa - pb;
-  return activityKey(a).localeCompare(activityKey(b));
+  // ISO-8601 UTC strings: lexicographic order == chronological. Plain compare
+  // is locale-independent (unlike localeCompare) and faster.
+  const ka = activityKey(a);
+  const kb = activityKey(b);
+  return ka < kb ? -1 : ka > kb ? 1 : 0;
 }
 
 /**
