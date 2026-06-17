@@ -55,6 +55,19 @@ describe("decisionSchema", () => {
         .success,
     ).toBe(true);
   });
+  test("start/complete without reason are valid", () => {
+    expect(decisionSchema.safeParse({ decision: "start" }).success).toBe(true);
+    expect(decisionSchema.safeParse({ decision: "complete" }).success).toBe(true);
+  });
+  test("cancel requires reason", () => {
+    expect(decisionSchema.safeParse({ decision: "cancel" }).success).toBe(false);
+    expect(
+      decisionSchema.safeParse({ decision: "cancel", reason: "yapılamadı" }).success,
+    ).toBe(true);
+  });
+  test("unknown decision value is rejected", () => {
+    expect(decisionSchema.safeParse({ decision: "frobnicate" }).success).toBe(false);
+  });
 });
 
 test("newRequestSchema: Türkçe alan mesajları", () => {
@@ -78,5 +91,5 @@ test("title max message Türkçe", () => {
 test("decision reject without reason Türkçe", () => {
   const r = decisionSchema.safeParse({ decision: "reject" });
   expect(r.success).toBe(false);
-  if (!r.success) expect(r.error.issues[0]?.message).toBe("Ret için gerekçe gerekli");
+  if (!r.success) expect(r.error.issues[0]?.message).toBe("Gerekçe gerekli");
 });

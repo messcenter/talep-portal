@@ -22,13 +22,16 @@ export type NewRequestInput = z.infer<typeof newRequestSchema>;
 export const replySchema = z.object({ body: req(5000, "Cevap") });
 export const messageSchema = z.object({ body: req(5000, "Soru") });
 
+export const DECISION_VALUES = ["accept", "reject", "start", "complete", "cancel"] as const;
+
 export const decisionSchema = z
   .object({
-    decision: z.enum(["accept", "reject"], { message: "Geçersiz karar" }),
+    decision: z.enum(DECISION_VALUES, { message: "Geçersiz karar" }),
     reason: z.string().trim().max(2000, "Gerekçe en fazla 2000 karakter olabilir").optional(),
   })
-  .refine((d) => d.decision !== "reject" || !!d.reason, {
-    message: "Ret için gerekçe gerekli",
+  .refine((d) => !(d.decision === "reject" || d.decision === "cancel") || !!d.reason, {
+    message: "Gerekçe gerekli",
     path: ["reason"],
   });
 export type DecisionInput = z.infer<typeof decisionSchema>;
+export type DecisionValue = (typeof DECISION_VALUES)[number];
