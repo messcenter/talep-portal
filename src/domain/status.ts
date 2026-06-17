@@ -4,16 +4,22 @@ export type RequestStatus =
   | "clarifying"
   | "answered"
   | "accepted"
-  | "rejected";
+  | "in_progress"
+  | "done"
+  | "rejected"
+  | "cancelled";
 
-const TERMINAL: ReadonlySet<RequestStatus> = new Set(["accepted", "rejected"]);
+const TERMINAL: ReadonlySet<RequestStatus> = new Set(["done", "rejected", "cancelled"]);
 
 const ALLOWED: Record<RequestStatus, ReadonlySet<RequestStatus>> = {
   new: new Set(["clarifying", "accepted", "rejected"]),
   clarifying: new Set(["answered", "accepted", "rejected"]),
   answered: new Set(["clarifying", "accepted", "rejected"]),
-  accepted: new Set(),
+  accepted: new Set(["in_progress", "done", "cancelled"]),
+  in_progress: new Set(["done", "cancelled"]),
+  done: new Set(),
   rejected: new Set(),
+  cancelled: new Set(),
 };
 
 const LABELS_TR: Record<RequestStatus, string> = {
@@ -21,7 +27,10 @@ const LABELS_TR: Record<RequestStatus, string> = {
   clarifying: "Netleştiriliyor",
   answered: "Cevaplandı",
   accepted: "Kabul edildi",
+  in_progress: "Yapılıyor",
+  done: "Tamamlandı",
   rejected: "Reddedildi",
+  cancelled: "İptal edildi",
 };
 
 export function isTerminal(s: RequestStatus): boolean {

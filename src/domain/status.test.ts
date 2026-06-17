@@ -28,7 +28,6 @@ describe("status state machine", () => {
     expect(canTransition("clarifying", "rejected")).toBe(true);
   });
   test("terminal statuses cannot transition out", () => {
-    expect(isTerminal("accepted")).toBe(true);
     expect(isTerminal("rejected")).toBe(true);
     expect(canTransition("accepted", "clarifying")).toBe(false);
     expect(canTransition("rejected", "accepted")).toBe(false);
@@ -42,5 +41,33 @@ describe("status state machine", () => {
     expect(statusLabelTr("answered")).toBe("Cevaplandı");
     expect(statusLabelTr("accepted")).toBe("Kabul edildi");
     expect(statusLabelTr("rejected")).toBe("Reddedildi");
+  });
+  test("accepted is no longer terminal; advances to in_progress/done/cancelled", () => {
+    expect(isTerminal("accepted")).toBe(false);
+    expect(canTransition("accepted", "in_progress")).toBe(true);
+    expect(canTransition("accepted", "done")).toBe(true);
+    expect(canTransition("accepted", "cancelled")).toBe(true);
+  });
+  test("in_progress advances to done/cancelled only", () => {
+    expect(canTransition("in_progress", "done")).toBe(true);
+    expect(canTransition("in_progress", "cancelled")).toBe(true);
+    expect(canTransition("in_progress", "accepted")).toBe(false);
+    expect(canTransition("in_progress", "rejected")).toBe(false);
+  });
+  test("done and cancelled are terminal", () => {
+    expect(isTerminal("done")).toBe(true);
+    expect(isTerminal("cancelled")).toBe(true);
+    expect(canTransition("done", "in_progress")).toBe(false);
+    expect(canTransition("cancelled", "accepted")).toBe(false);
+  });
+  test("cannot reject/cancel from pre-decision into in_progress/done", () => {
+    expect(canTransition("new", "in_progress")).toBe(false);
+    expect(canTransition("new", "done")).toBe(false);
+    expect(canTransition("new", "cancelled")).toBe(false);
+  });
+  test("TR labels for new statuses", () => {
+    expect(statusLabelTr("in_progress")).toBe("Yapılıyor");
+    expect(statusLabelTr("done")).toBe("Tamamlandı");
+    expect(statusLabelTr("cancelled")).toBe("İptal edildi");
   });
 });
