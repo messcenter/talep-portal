@@ -36,7 +36,15 @@ function formatDate(iso: string): string {
   }
 }
 
-export function RequestCard({ r, basePath = "/requests" }: { r: RequestRow; basePath?: string }) {
+export function RequestCard({
+  r,
+  basePath = "/requests",
+  showStatus = true,
+}: {
+  r: RequestRow;
+  basePath?: string;
+  showStatus?: boolean;
+}) {
   return (
     <Link
       to={`${basePath}/${r.id}`}
@@ -53,7 +61,7 @@ export function RequestCard({ r, basePath = "/requests" }: { r: RequestRow; base
             {r.title}
           </span>
         </div>
-        <StatusBadge status={r.status} />
+        {showStatus && <StatusBadge status={r.status} />}
       </div>
 
       {/* Second row: priority · application */}
