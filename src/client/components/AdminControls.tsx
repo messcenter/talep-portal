@@ -12,10 +12,27 @@ import {
   DialogClose,
   DialogTitle,
 } from "../../components/ui/dialog";
-import { isTerminal, type RequestStatus } from "../../domain/status";
+import { type RequestStatus } from "../../domain/status";
 import { RichTextEditor } from "./RichTextEditor";
 import { FilePicker } from "./FilePicker";
 import { useToast } from "./Toast";
+
+export type AdminAction = "clarify" | "accept" | "reject" | "start" | "complete" | "cancel";
+
+export function adminActionsFor(status: RequestStatus): AdminAction[] {
+  switch (status) {
+    case "new":
+    case "clarifying":
+    case "answered":
+      return ["clarify", "accept", "reject"];
+    case "accepted":
+      return ["start", "complete", "cancel"];
+    case "in_progress":
+      return ["complete", "cancel"];
+    default:
+      return [];
+  }
+}
 
 // ---- Clarification message form ----
 
@@ -119,7 +136,10 @@ function DecisionForm({
   const [rejectReason, setRejectReason] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
 
-  async function decide(decision: "accept" | "reject", reason?: string) {
+  async function decide(
+    decision: "accept" | "reject" | "start" | "complete" | "cancel",
+    reason?: string,
+  ) {
     setSubmitting(true);
     setErrorMsg(null);
     const fd = new FormData();
@@ -224,6 +244,110 @@ function DecisionForm({
   );
 }
 
+// ---- Post-acceptance progress (start / complete / cancel) ----
+
+function ProgressForm({
+  requestId,
+  status,
+  onDone,
+}: {
+  requestId: number;
+  status: RequestStatus;
+  onDone: () => void;
+}) {
+  const toast = useToast();
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  async function send(decision: "start" | "complete" | "cancel", reason?: string) {
+    setSubmitting(true);
+    setErrorMsg(null);
+    const fd = new FormData();
+    fd.set("decision", decision);
+    if (reason !== undefined) fd.set("reason", reason);
+    try {
+      await apiSend(`/api/admin/requests/${requestId}/decision`, "POST", fd);
+      setCancelOpen(false);
+      setCancelReason("");
+      toast.show("Durum güncellendi.");
+      onDone();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Beklenmeyen bir hata oluştu.");
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card className="p-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-on-surface-variant mb-3">
+        Durum
+      </h3>
+
+      {errorMsg && (
+        <div
+          role="alert"
+          className="mb-4 bg-danger/10 border border-danger/30 text-danger rounded p-3 text-sm"
+        >
+          {errorMsg}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-3">
+        {status === "accepted" && (
+          <Button type="button" variant="primary" size="md" disabled={submitting}
+            onClick={() => send("start")}>
+            Geliştirmeye başla
+          </Button>
+        )}
+
+        <Button type="button" variant="success" size="md" disabled={submitting}
+          onClick={() => send("complete")}>
+          Tamamlandı
+        </Button>
+
+        <Dialog
+          open={cancelOpen}
+          onOpenChange={(open) => { setCancelOpen(open); if (open) setErrorMsg(null); }}
+        >
+          <DialogTrigger asChild>
+            <Button type="button" variant="danger" size="md" disabled={submitting}>
+              İptal et
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogTitle className="text-base font-semibold text-on-surface mb-3">
+              Talebi iptal et
+            </DialogTitle>
+            <label className="block text-sm font-medium text-on-surface mb-1">
+              İptal gerekçesi
+            </label>
+            <div className="mb-4">
+              <RichTextEditor value={cancelReason} onChange={setCancelReason} required maxLength={2000} />
+            </div>
+            {errorMsg && <p className="text-danger text-xs mb-2" role="alert">{errorMsg}</p>}
+            <div className="flex justify-end gap-3">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary" size="md" disabled={submitting}>
+                  Vazgeç
+                </Button>
+              </DialogClose>
+              <Button type="button" variant="danger" size="md" disabled={submitting}
+                onClick={() => {
+                  if (!cancelReason.trim()) { setErrorMsg("İptal gerekçesi gerekli"); return; }
+                  send("cancel", cancelReason);
+                }}>
+                {submitting ? "Gönderiliyor…" : "İptal et"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </Card>
+  );
+}
+
 // ---- Wrapper ----
 
 export function AdminControls({
@@ -235,7 +359,9 @@ export function AdminControls({
   status: RequestStatus;
   onDone: () => void;
 }) {
-  if (isTerminal(status)) {
+  const actions = adminActionsFor(status);
+
+  if (actions.length === 0) {
     return (
       <div className="mt-6 border-t border-border-subtle pt-4 text-sm text-on-surface-variant">
         Bu talep kapalı.
@@ -243,10 +369,18 @@ export function AdminControls({
     );
   }
 
+  if (actions.includes("clarify")) {
+    return (
+      <div className="mt-6 border-t border-border-subtle pt-6 flex flex-col gap-4">
+        <ClarificationForm requestId={requestId} onDone={onDone} />
+        <DecisionForm requestId={requestId} onDone={onDone} />
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 border-t border-border-subtle pt-6 flex flex-col gap-4">
-      <ClarificationForm requestId={requestId} onDone={onDone} />
-      <DecisionForm requestId={requestId} onDone={onDone} />
+      <ProgressForm requestId={requestId} status={status} onDone={onDone} />
     </div>
   );
 }
