@@ -529,6 +529,18 @@ describe("POST /api/admin/requests/:id/decision", () => {
     expect(sent.some((m) => m.subject.includes("tamamlandı"))).toBe(true);
   });
 
+  test("complete directly from accepted → 204, status='done' (skips in_progress)", async () => {
+    const r = seedRequest();
+    repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
+    sent = [];
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: decisionForm("complete"),
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.getRequest(r.id)?.status).toBe("done");
+    expect(sent.some((m) => m.subject.includes("tamamlandı"))).toBe(true);
+  });
+
   test("cancel without reason → 400", async () => {
     const r = seedRequest();
     repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
