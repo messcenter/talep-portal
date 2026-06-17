@@ -43,6 +43,7 @@ Bun.serve({
     "/my": serveShell,
     "/admin": serveShell,
     "/admin/talepler": serveShell,
+    "/admin/pano": serveShell,
     "/admin/tanimlar": serveShell,
     // NOTE: /requests/:id is a single-segment param route — it will NOT match
     // /requests/:id/attachments/:attId (3 extra segments), so attachments fall
