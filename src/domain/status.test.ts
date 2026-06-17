@@ -48,7 +48,8 @@ describe("status state machine", () => {
     expect(canTransition("accepted", "done")).toBe(true);
     expect(canTransition("accepted", "cancelled")).toBe(true);
   });
-  test("in_progress advances to done/cancelled only", () => {
+  test("in_progress is non-terminal and advances to done/cancelled only", () => {
+    expect(isTerminal("in_progress")).toBe(false);
     expect(canTransition("in_progress", "done")).toBe(true);
     expect(canTransition("in_progress", "cancelled")).toBe(true);
     expect(canTransition("in_progress", "accepted")).toBe(false);
@@ -60,10 +61,12 @@ describe("status state machine", () => {
     expect(canTransition("done", "in_progress")).toBe(false);
     expect(canTransition("cancelled", "accepted")).toBe(false);
   });
-  test("cannot reject/cancel from pre-decision into in_progress/done", () => {
+  test("pre-decision statuses cannot skip into post-acceptance statuses", () => {
     expect(canTransition("new", "in_progress")).toBe(false);
     expect(canTransition("new", "done")).toBe(false);
     expect(canTransition("new", "cancelled")).toBe(false);
+    expect(canTransition("clarifying", "in_progress")).toBe(false);
+    expect(canTransition("answered", "in_progress")).toBe(false);
   });
   test("TR labels for new statuses", () => {
     expect(statusLabelTr("in_progress")).toBe("Yapılıyor");
