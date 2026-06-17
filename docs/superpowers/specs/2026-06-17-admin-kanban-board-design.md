@@ -64,10 +64,11 @@ onlara liste görünümünden bakılır.
 
 - `export const BOARD_COLUMNS: RequestStatus[]` = `["new", "clarifying",
   "answered", "accepted", "in_progress"]` (terminal yok).
-- `export function groupForBoard(rows: RequestRow[]): RequestRow[][]` — her
-  `BOARD_COLUMNS` durumu için, o duruma ait satırları sıralama kuralıyla sıralı
-  döndürür (dış indeks `BOARD_COLUMNS` ile hizalı). Terminal/bilinmeyen durumlar
-  elenir.
+- `export function groupForBoard(rows: RequestRow[]): Record<BoardStatus, RequestRow[]>`
+  — her `BOARD_COLUMNS` durumu için, o duruma ait satırları sıralama kuralıyla
+  sıralı döndürür; **duruma göre anahtarlanmış** (konumsal değil) — çağıran
+  `columns[status]` ile okur, indeks bağlanımı yok. Terminal/bilinmeyen durumlar
+  elenir (anahtarı oluşmaz). `BoardStatus` = aktif durumların union'ı.
 - Öncelik sırası için yardımcı: `PRIORITY_RANK = { high: 0, medium: 1, low: 2 }`.
 - React/TipTap/ProseMirror import grafiğinden **uzak tutulur** (birim testi
   DOM'suz koşsun — `adminActionsFor` dersindeki gibi).
