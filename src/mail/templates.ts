@@ -106,11 +106,17 @@ export function questionRequester(r: RequestRow, baseUrl: string): Mail {
 export function decisionRequester(
   r: RequestRow,
   baseUrl: string,
-  target: "accepted" | "rejected",
+  target: "accepted" | "rejected" | "done" | "cancelled",
   reason?: string,
 ): Mail {
   const url = `${baseUrl}/requests/${r.id}`;
-  const label = target === "accepted" ? "kabul edildi" : "reddedildi";
+  const LABEL = {
+    accepted: "kabul edildi",
+    rejected: "reddedildi",
+    done: "tamamlandı",
+    cancelled: "iptal edildi",
+  } as const;
+  const label = LABEL[target];
   const reasonHtml = reason ? `<p style="margin:0 0 16px;"><strong>Not:</strong> ${esc(reason)}</p>` : "";
   const reasonText = reason ? `\nNot: ${reason}` : "";
   return {

@@ -51,6 +51,15 @@ describe("mail templates", () => {
     expect(m.html).toContain("Not:");
     expect(m.html).toContain("uygun &lt;değil&gt;");
   });
+  test("decisionRequester done: subject Türkçe", () => {
+    const m = decisionRequester(row(), base, "done");
+    expect(m.subject).toBe("Talep tamamlandı: TALEP-0007");
+  });
+  test("decisionRequester cancelled with reason: subject + escaped reason", () => {
+    const m = decisionRequester(row(), base, "cancelled", "uygun <değil>");
+    expect(m.subject).toBe("Talep iptal edildi: TALEP-0007");
+    expect(m.html).toContain("uygun &lt;değil&gt;");
+  });
   test("XSS: title is HTML-escaped in html", () => {
     const m = newRequestAdmin(row({ title: "<script>alert(1)</script>" }), base);
     expect(m.html).toContain("&lt;script&gt;");
