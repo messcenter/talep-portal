@@ -17,6 +17,7 @@ export interface DetailData {
   attachments: AttachmentRow[];
   subscribers: SubscriberView[];
   isSubscriber: boolean;
+  related_departments: string[];
 }
 
 export function useRequestDetail(id: string | undefined) {

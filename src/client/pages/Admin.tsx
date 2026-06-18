@@ -42,14 +42,27 @@ export function Admin() {
 function AdminInner() {
   // null = "Hepsi" (no status param)
   const [active, setActive] = useState<RequestStatus | null>(null);
+  const [deptFilter, setDeptFilter] = useState<string>("");
+  const [depts, setDepts] = useState<{ id: number; name: string }[]>([]);
   const [rows, setRows] = useState<RequestRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiGet<{ id: number; name: string; modules: { id: number; name: string }[] }[]>(
+      "/api/departments",
+    )
+      .then((d) => setDepts(d.map((x) => ({ id: x.id, name: x.name }))))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     setRows(null);
     setError(null);
-    const qs = active ? `?status=${active}` : "";
+    const params = new URLSearchParams();
+    if (active) params.set("status", active);
+    if (deptFilter) params.set("department", deptFilter);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     apiGet<RequestRow[]>(`/api/admin/requests${qs}`)
       .then((data) => {
         if (!cancelled) setRows(data);
@@ -61,7 +74,7 @@ function AdminInner() {
     return () => {
       cancelled = true;
     };
-  }, [active]);
+  }, [active, deptFilter]);
 
   function tabClass(isActive: boolean): string {
     return [
@@ -80,7 +93,7 @@ function AdminInner() {
       </h1>
 
       {/* Status filter tabs */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <button
           type="button"
           className={tabClass(active === null)}
@@ -99,6 +112,26 @@ function AdminInner() {
           </button>
         ))}
       </div>
+
+      {/* Department filter */}
+      {depts.length > 0 && (
+        <div className="mb-6">
+          <label htmlFor="dept-filter" className="sr-only">Departman filtresi</label>
+          <select
+            id="dept-filter"
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+            className="rounded border border-border bg-white px-3 py-1.5 text-sm text-on-surface"
+          >
+            <option value="">Tüm departmanlar</option>
+            {depts.map((d) => (
+              <option key={d.id} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* States */}
       {!rows && !error && <Spinner />}

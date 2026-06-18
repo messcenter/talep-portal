@@ -5,7 +5,15 @@ import { MarkdownView } from "./MarkdownView";
 import { PRIORITY_LABEL } from "../labels";
 import type { RequestRow } from "./RequestCard";
 
-export function RequestMeta({ req, requestAtts }: { req: RequestRow; requestAtts: AttachmentRow[] }) {
+export function RequestMeta({
+  req,
+  requestAtts,
+  relatedDepartments,
+}: {
+  req: RequestRow;
+  requestAtts: AttachmentRow[];
+  relatedDepartments?: string[];
+}) {
   return (
     <Card className="p-4 mb-6">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -21,6 +29,19 @@ export function RequestMeta({ req, requestAtts }: { req: RequestRow; requestAtts
         <span>·</span><span>{req.application}</span>
         {req.module_area && (<><span>·</span><span>{req.module_area}</span></>)}
       </div>
+      {relatedDepartments && relatedDepartments.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-4">
+          <span className="text-xs text-on-surface-variant">İlgili:</span>
+          {relatedDepartments.map((d) => (
+            <span
+              key={d}
+              className="text-xs px-2 py-0.5 rounded-full bg-surface-tonal border border-border-subtle text-on-surface"
+            >
+              {d}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">Açıklama</p>
         <MarkdownView source={req.description} />

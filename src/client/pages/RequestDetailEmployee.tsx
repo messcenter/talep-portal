@@ -64,7 +64,7 @@ export function RequestDetailEmployee() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-6">
-      <RequestMeta req={req} requestAtts={requestAtts} />
+      <RequestMeta req={req} requestAtts={requestAtts} relatedDepartments={data.related_departments} />
       <Card className="p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-on-surface-variant mb-4">
           Yazışma

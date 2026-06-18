@@ -72,7 +72,7 @@ export function RequestDetailAdmin() {
           ⬇ Markdown indir
         </a>
       </div>
-      <RequestMeta req={req} requestAtts={requestAtts} />
+      <RequestMeta req={req} requestAtts={requestAtts} relatedDepartments={data.related_departments} />
       <Card className="p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-on-surface-variant mb-4">
           Yazışma
