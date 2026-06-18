@@ -40,10 +40,12 @@ export function RequestCard({
   r,
   basePath = "/requests",
   showStatus = true,
+  showRequester = false,
 }: {
   r: RequestRow;
   basePath?: string;
   showStatus?: boolean;
+  showRequester?: boolean;
 }) {
   return (
     <Link
@@ -76,6 +78,15 @@ export function RequestCard({
           </>
         )}
       </div>
+
+      {/* Requester (admin list only) */}
+      {showRequester && (
+        <div className="mt-1.5 flex items-center gap-1.5 text-sm text-on-surface-variant">
+          <span>Açan: <span className="text-on-surface">{r.requester_name}</span></span>
+          <span>·</span>
+          <span className="truncate">{r.requester_email}</span>
+        </div>
+      )}
 
       {/* Third row: created date · last activity */}
       <div className="mt-1.5 flex items-center gap-1.5 text-xs text-on-surface-variant">

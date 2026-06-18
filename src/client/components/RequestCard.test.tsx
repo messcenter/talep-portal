@@ -33,3 +33,18 @@ test("RequestCard hides status badge when showStatus=false", () => {
   );
   expect(html).not.toContain("Kabul edildi");
 });
+
+test("RequestCard hides requester by default", () => {
+  const html = renderToStaticMarkup(
+    <MemoryRouter><RequestCard r={row} /></MemoryRouter>,
+  );
+  expect(html).not.toContain("Açan:");
+});
+
+test("RequestCard shows requester name when showRequester=true", () => {
+  const html = renderToStaticMarkup(
+    <MemoryRouter><RequestCard r={row} showRequester /></MemoryRouter>,
+  );
+  expect(html).toContain("Açan:");
+  expect(html).toContain("A");
+});

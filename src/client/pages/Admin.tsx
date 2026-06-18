@@ -152,7 +152,7 @@ function AdminInner() {
       {rows && rows.length > 0 && (
         <div className="flex flex-col gap-3">
           {rows.map((r) => (
-            <RequestCard key={r.id} r={r} basePath="/admin/requests" />
+            <RequestCard key={r.id} r={r} basePath="/admin/requests" showRequester />
           ))}
         </div>
       )}

@@ -9,10 +9,12 @@ export function RequestMeta({
   req,
   requestAtts,
   relatedDepartments,
+  showRequester = false,
 }: {
   req: RequestRow;
   requestAtts: AttachmentRow[];
   relatedDepartments?: string[];
+  showRequester?: boolean;
 }) {
   return (
     <Card className="p-4 mb-6">
@@ -28,6 +30,12 @@ export function RequestMeta({
         <span>·</span><span>{req.department}</span>
         <span>·</span><span>{req.application}</span>
         {req.module_area && (<><span>·</span><span>{req.module_area}</span></>)}
+        {showRequester && (
+          <>
+            <span>·</span>
+            <span>Açan: <span className="text-on-surface">{req.requester_name}</span> ({req.requester_email})</span>
+          </>
+        )}
       </div>
       {relatedDepartments && relatedDepartments.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-4">
