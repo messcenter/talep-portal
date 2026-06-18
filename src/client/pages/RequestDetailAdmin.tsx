@@ -7,6 +7,7 @@ import { Spinner } from "../components/Spinner";
 import { RequestMeta } from "../components/RequestMeta";
 import { Thread } from "../components/Thread";
 import { AdminControls } from "../components/AdminControls";
+import { Subscribers } from "../components/Subscribers";
 import { type AttachmentRow } from "../components/Attachments";
 import { useRequestDetail } from "../hooks/useRequestDetail";
 
@@ -93,6 +94,16 @@ export function RequestDetailAdmin() {
           <AdminControls requestId={req.id} status={req.status} onDone={load} />
         )}
       </Card>
+      <div className="mt-4">
+        <Subscribers
+          requestId={req.id}
+          subscribers={data.subscribers}
+          isSubscriber={data.isSubscriber}
+          canManage={user.isAdmin || isOwner}
+          currentEmail={user.email}
+          onChanged={load}
+        />
+      </div>
     </main>
   );
 }

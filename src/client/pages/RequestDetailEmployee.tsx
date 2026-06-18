@@ -7,6 +7,7 @@ import { Spinner } from "../components/Spinner";
 import { RequestMeta } from "../components/RequestMeta";
 import { Thread } from "../components/Thread";
 import { ReplyForm } from "../components/ReplyForm";
+import { Subscribers } from "../components/Subscribers";
 import { type AttachmentRow } from "../components/Attachments";
 import { useRequestDetail } from "../hooks/useRequestDetail";
 
@@ -80,6 +81,16 @@ export function RequestDetailEmployee() {
           </>
         )}
       </Card>
+      <div className="mt-4">
+        <Subscribers
+          requestId={req.id}
+          subscribers={data.subscribers}
+          isSubscriber={data.isSubscriber}
+          canManage={isOwner || user.isAdmin}
+          currentEmail={user.email}
+          onChanged={load}
+        />
+      </div>
     </main>
   );
 }
