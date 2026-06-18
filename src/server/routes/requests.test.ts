@@ -68,6 +68,12 @@ function schema(db: Database): Database {
       UNIQUE(request_id, department)
     );
     CREATE INDEX idx_request_departments_request ON request_departments(request_id);`);
+  db.exec(`
+    CREATE TABLE applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );`);
   return db;
 }
 
@@ -84,6 +90,9 @@ const storage: Storage = {
 
 beforeEach(() => {
   repo = makeRepo(schema(new Database(":memory:")));
+  // The form defaults application to "ERP" (validFormData); seed it so every
+  // happy-path POST has a managed application to validate against.
+  repo.createApplication("ERP", "2026-01-01T00:00:00.000Z");
   sent = [];
   memStore.clear();
   const deps: Deps = {
@@ -836,5 +845,32 @@ describe("POST /api/requests — related departments", () => {
       headers: { cookie: authedCookie() },
     }));
     expect((await res.json() as any).related_departments).toEqual(["Lojistik"]);
+  });
+});
+
+// ─── POST /api/requests — application must be managed ───────────────────────
+
+describe("POST /api/requests — application validation", () => {
+  const hdr = { cookie: authedCookie(), "x-csrf-token": "tok" };
+
+  test("managed application → 201", async () => {
+    seedDept("IT");
+    const fd = validFormData(); // application "ERP" is seeded globally
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST", headers: hdr, body: fd,
+    }));
+    expect(res.status).toBe(201);
+  });
+
+  test("unmanaged application → 400", async () => {
+    seedDept("IT");
+    const fd = validFormData();
+    fd.set("application", "BilinmeyenUygulama");
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST", headers: hdr, body: fd,
+    }));
+    expect(res.status).toBe(400);
+    const body = await res.json() as { errors: string[] };
+    expect(body.errors.some((e) => e.toLowerCase().includes("uygulama"))).toBe(true);
   });
 });

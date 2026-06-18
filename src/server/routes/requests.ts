@@ -72,6 +72,9 @@ export async function handleRequests(
     if (!dept) {
       return json({ errors: ["Geçersiz departman"] }, 400, extraHeaders);
     }
+    if (!deps.repo.getApplicationByName(parsed.data.application)) {
+      return json({ errors: ["Geçersiz uygulama"] }, 400, extraHeaders);
+    }
     if (parsed.data.module_area && !deps.repo.listModuleNames(dept.id).includes(parsed.data.module_area)) {
       return json({ errors: ["Geçersiz modül"] }, 400, extraHeaders);
     }

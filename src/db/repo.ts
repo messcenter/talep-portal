@@ -293,6 +293,9 @@ export function makeRepo(db: Database) {
     getApplication(id: number): Application | null {
       return (db.query(`SELECT * FROM applications WHERE id = ?`).get(id) as Application) ?? null;
     },
+    getApplicationByName(name: string): Application | null {
+      return (db.query(`SELECT * FROM applications WHERE name = ?`).get(name) as Application) ?? null;
+    },
     listApplications(): Application[] {
       return db.query(`SELECT * FROM applications ORDER BY name`).all() as Application[];
     },
