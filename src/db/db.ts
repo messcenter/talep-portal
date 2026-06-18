@@ -83,5 +83,15 @@ function migrate(db: Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_subscribers_request ON subscribers(request_id);
     CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email);
+
+    CREATE TABLE IF NOT EXISTS request_departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+      department TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(request_id, department)
+    );
+    CREATE INDEX IF NOT EXISTS idx_request_departments_request ON request_departments(request_id);
+    CREATE INDEX IF NOT EXISTS idx_request_departments_dept ON request_departments(department);
   `);
 }

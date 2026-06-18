@@ -58,6 +58,15 @@ function seedSchema(db: Database): Database {
       UNIQUE(request_id, email)
     );
     CREATE INDEX idx_subscribers_request ON subscribers(request_id);
+    CREATE TABLE request_departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      department TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(request_id, department)
+    );
+    CREATE INDEX idx_request_departments_request ON request_departments(request_id);
+    CREATE INDEX idx_request_departments_dept ON request_departments(department);
   `);
   return db;
 }
@@ -299,5 +308,37 @@ describe("repo.subscribers", () => {
   test("listSubscribers for request with none returns []", () => {
     const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
     expect(repo.listSubscribers(r.id)).toEqual([]);
+  });
+});
+
+// ─── related_departments ───────────────────────────────────────────────────
+
+describe("repo.relatedDepartments", () => {
+  test("createRequest persists related departments", () => {
+    const r = repo.createRequest({ ...baseInput, department: "Üretim" }, "2026-01-01T00:00:00.000Z", [], ["Lojistik", "IT"]);
+    expect(repo.listRelatedDepartments(r.id)).toEqual(["IT", "Lojistik"]); // sorted by name
+  });
+  test("createRequest without related → []", () => {
+    const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
+    expect(repo.listRelatedDepartments(r.id)).toEqual([]);
+  });
+  test("listAll filters by main OR related department", () => {
+    const r1 = repo.createRequest({ ...baseInput, department: "Üretim" }, "2026-01-01T00:00:00.000Z", [], ["Lojistik"]);
+    const r2 = repo.createRequest({ ...baseInput, department: "Lojistik" }, "2026-01-01T00:00:00.000Z", [], []);
+    const r3 = repo.createRequest({ ...baseInput, department: "IT" }, "2026-01-01T00:00:00.000Z", [], []);
+    const ids = repo.listAll({ department: "Lojistik" }).map((r) => r.id);
+    expect(ids).toContain(r1.id); // related match
+    expect(ids).toContain(r2.id); // main match
+    expect(ids).not.toContain(r3.id);
+  });
+  test("listAll combines status + department", () => {
+    const r = repo.createRequest({ ...baseInput, department: "Üretim" }, "2026-01-01T00:00:00.000Z", [], ["Lojistik"]);
+    repo.updateStatus(r.id, "accepted");
+    expect(repo.listAll({ department: "Lojistik", status: "accepted" }).map((x) => x.id)).toContain(r.id);
+    expect(repo.listAll({ department: "Lojistik", status: "new" })).toEqual([]);
+  });
+  test("listAll without filters still returns all (no WHERE breakage)", () => {
+    repo.createRequest(baseInput, "t");
+    expect(repo.listAll({}).length).toBe(1);
   });
 });

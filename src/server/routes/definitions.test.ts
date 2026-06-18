@@ -63,6 +63,14 @@ function schema(db: Database): Database {
       UNIQUE(request_id, email)
     );
     CREATE INDEX idx_subscribers_request ON subscribers(request_id);
+    CREATE TABLE request_departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      department TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(request_id, department)
+    );
+    CREATE INDEX idx_request_departments_request ON request_departments(request_id);
   `);
   return db;
 }

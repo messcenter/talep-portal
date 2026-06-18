@@ -86,6 +86,7 @@ export function makeRepo(db: Database) {
       input: CreateRequestInput,
       createdAt: string,
       attachments: AttachmentInput[] = [],
+      relatedDepartments: string[] = [],
     ): RequestRow {
       const tx = db.transaction(() => {
         const row = db
@@ -117,6 +118,12 @@ export function makeRepo(db: Database) {
             $prio: input.priority,
           });
         insertAttachments(inserted!.id, null, attachments, createdAt);
+        for (const name of relatedDepartments) {
+          db.query(
+            `INSERT OR IGNORE INTO request_departments (request_id, department, created_at)
+             VALUES (?, ?, ?)`,
+          ).run(inserted!.id, name, createdAt);
+        }
         return inserted!;
       });
       return tx();
@@ -143,7 +150,7 @@ export function makeRepo(db: Database) {
         .all(email);
     },
 
-    listAll(filter: { status?: string; priority?: string }): RequestRow[] {
+    listAll(filter: { status?: string; priority?: string; department?: string }): RequestRow[] {
       const clauses: string[] = [];
       const params: Record<string, string> = {};
       if (filter.status) {
@@ -153,6 +160,12 @@ export function makeRepo(db: Database) {
       if (filter.priority) {
         clauses.push("priority = $priority");
         params.$priority = filter.priority;
+      }
+      if (filter.department) {
+        clauses.push(
+          "(department = $dept OR EXISTS (SELECT 1 FROM request_departments rd WHERE rd.request_id = requests.id AND rd.department = $dept))",
+        );
+        params.$dept = filter.department;
       }
       if (clauses.length === 0) {
         return db
@@ -328,6 +341,15 @@ export function makeRepo(db: Database) {
           "SELECT * FROM subscribers WHERE request_id = ? ORDER BY id ASC",
         )
         .all(requestId);
+    },
+
+    listRelatedDepartments(requestId: number): string[] {
+      return db
+        .query<{ department: string }, [number]>(
+          "SELECT department FROM request_departments WHERE request_id = ? ORDER BY department",
+        )
+        .all(requestId)
+        .map((r) => r.department);
     },
 
     addMessageAndTransition(
