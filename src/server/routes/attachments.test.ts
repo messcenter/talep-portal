@@ -257,3 +257,43 @@ describe("GET /requests/:id/attachments/:attId", () => {
     expect(res.headers.get("cache-control")).toBe("private, max-age=300");
   });
 });
+
+// ─── Subscriber attachment visibility ────────────────────────────────────────
+
+describe("GET /requests/:id/attachments/:attId — subscribers", () => {
+  function seedWithAttachment() {
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "d", application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "f", priority: "high" },
+      "2026-06-12T00:00:00Z",
+      [{ storage_key: "img.png", original_name: "shot.png", mime: "image/png", size_bytes: 3 }],
+    );
+    memStore.set("img.png", new Uint8Array([1, 2, 3]));
+    const att = repo.listAttachmentsByRequest(r.id)[0]!;
+    return { r, att };
+  }
+
+  test("subscriber can download attachment → 200", async () => {
+    const { r, att } = seedWithAttachment();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-06-13T00:00:00Z");
+    const res = await handler(
+      new Request(`http://localhost:3000/requests/${r.id}/attachments/${att.id}`, {
+        headers: { cookie: authedCookie("c@kokilmetal.com.tr", "C") },
+      }),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  test("non-subscriber third party → 404 (no leak)", async () => {
+    const { r, att } = seedWithAttachment();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-06-13T00:00:00Z");
+    const res = await handler(
+      new Request(`http://localhost:3000/requests/${r.id}/attachments/${att.id}`, {
+        headers: { cookie: authedCookie("d@kokilmetal.com.tr", "D") },
+      }),
+    );
+    expect(res.status).toBe(404);
+  });
+});

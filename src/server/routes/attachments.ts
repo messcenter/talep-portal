@@ -45,7 +45,8 @@ export async function handleAttachment(ctx: ReqCtx, deps: Deps): Promise<Respons
 
   // Request must exist and the current user must be allowed to view it
   const r = repo.getRequest(att.request_id);
-  if (!r || !canViewRequest(user, r)) return text("Bulunamadı", 404);
+  const isSub = repo.isSubscriber(att.request_id, user.email);
+  if (!r || !canViewRequest(user, r, isSub)) return text("Bulunamadı", 404);
 
   const bytes = await storage.read(att.storage_key);
   if (!bytes) return text("Bulunamadı", 404);

@@ -571,3 +571,50 @@ describe("POST /api/requests/:id/reply", () => {
     expect(repo.getRequest(r.id)?.status).toBe("clarifying");
   });
 });
+
+// ─── Subscribers in detail ───────────────────────────────────────────────────
+
+function seedOwnRequest(email = "a@kokilmetal.com.tr") {
+  return repo.createRequest(
+    { requester_name: "A", requester_email: email,
+      department: "d", application: "ERP", module_area: "",
+      request_type: "feature", title: "t", description: "d",
+      expected_benefit: "b", priority: "high" },
+    "2026-01-01T00:00:00.000Z",
+  );
+}
+
+describe("GET /api/requests/:id — subscribers in detail", () => {
+  test("detail includes subscribers list + isSubscriber flag for subscriber", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}`, {
+      headers: { cookie: authedCookie("c@kokilmetal.com.tr", "C") },
+    }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.isSubscriber).toBe(true);
+    expect(body.subscribers.map((s: any) => s.email)).toContain("c@kokilmetal.com.tr");
+  });
+
+  test("owner sees subscribers list with isSubscriber=false", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}`, {
+      headers: { cookie: authedCookie("a@kokilmetal.com.tr", "A") },
+    }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.isSubscriber).toBe(false);
+    expect(body.subscribers.length).toBe(1);
+  });
+
+  test("non-subscriber third party gets 404 (no leak)", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}`, {
+      headers: { cookie: authedCookie("d@kokilmetal.com.tr", "D") },
+    }));
+    expect(res.status).toBe(404);
+  });
+});

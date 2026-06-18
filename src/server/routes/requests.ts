@@ -85,12 +85,17 @@ export async function handleRequests(
     const id = Number(detailMatch[1]);
     if (!Number.isInteger(id)) return json({ error: "not found" }, 404, extraHeaders);
     const r = deps.repo.getRequest(id);
-    if (!r || !canViewRequest(user, r)) return json({ error: "not found" }, 404, extraHeaders);
+    if (!r) return json({ error: "not found" }, 404, extraHeaders);
+    const isSub = deps.repo.isSubscriber(r.id, user.email);
+    if (!canViewRequest(user, r, isSub))
+      return json({ error: "not found" }, 404, extraHeaders);
     return json(
       {
         request: r,
         messages: deps.repo.listMessages(r.id),
         attachments: deps.repo.listAttachmentsByRequest(r.id),
+        subscribers: deps.repo.listSubscribers(r.id),
+        isSubscriber: isSub,
       },
       200,
       extraHeaders,
