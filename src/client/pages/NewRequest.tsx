@@ -58,6 +58,7 @@ export function NewRequest() {
   const [depts, setDepts] = useState<Dept[] | null>(null);
   const [dept, setDept] = useState("");
   const [moduleName, setModuleName] = useState("");
+  const [relatedDepts, setRelatedDepts] = useState<Set<string>>(new Set());
   const [apps, setApps] = useState<{ id: number; name: string }[] | null>(null);
   const [app, setApp] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -76,6 +77,27 @@ export function NewRequest() {
   }, []);
 
   const selectedDept = depts?.find((d) => d.name === dept);
+  // Related-department candidates: every managed dept EXCEPT the currently-selected main one.
+  const otherDepts = (depts ?? []).filter((d) => d.name !== dept);
+
+  function toggleRelated(name: string) {
+    setRelatedDepts((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+
+  // If the main department changes to something already selected as related, drop it.
+  useEffect(() => {
+    setRelatedDepts((prev) => {
+      if (!prev.has(dept)) return prev;
+      const next = new Set(prev);
+      next.delete(dept);
+      return next;
+    });
+  }, [dept]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -92,6 +114,7 @@ export function NewRequest() {
     fd.set("module_area", moduleName);
     fd.set("application", app);
     for (const f of files) fd.append("files", f);
+    for (const d of relatedDepts) fd.append("related_departments", d);
 
     const get = (k: string) => ((fd.get(k) as string) ?? "").trim();
     const errs: Record<string, string> = {};
@@ -238,6 +261,34 @@ export function NewRequest() {
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {otherDepts.length > 0 && (
+              <div className="mt-4">
+                <FieldLabel htmlFor="related_departments">İlgili Departmanlar</FieldLabel>
+                <div className="flex flex-wrap gap-2" id="related_departments">
+                  {otherDepts.map((d) => {
+                    const active = relatedDepts.has(d.name);
+                    return (
+                      <button
+                        type="button"
+                        key={d.id}
+                        onClick={() => toggleRelated(d.name)}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                          active
+                            ? "bg-primary text-white border-primary"
+                            : "bg-surface text-on-surface border-border hover:bg-surface-tonal"
+                        }`}
+                      >
+                        {d.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Opsiyonel · bu talebi ilgilendiren diğer departmanlar
+                </p>
               </div>
             )}
           </section>
