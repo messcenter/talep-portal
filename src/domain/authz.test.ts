@@ -1,6 +1,12 @@
 // src/domain/authz.test.ts
 import { expect, test, describe } from "bun:test";
-import { isAdmin, canViewRequest, canReply } from "./authz";
+import {
+  isAdmin,
+  canViewRequest,
+  canReply,
+  canManageSubscribers,
+  canRemoveSubscriber,
+} from "./authz";
 
 const admin = { email: "boss@kokilmetal.com.tr", name: "Boss", isAdmin: true };
 const owner = { email: "a@kokilmetal.com.tr", name: "A", isAdmin: false };
@@ -59,5 +65,38 @@ describe("canReply", () => {
   test("email comparison is case-insensitive", () => {
     const upperOwner = { email: "A@Kokilmetal.com.tr", name: "A", isAdmin: false };
     expect(canReply(upperOwner, { ...req, status: "clarifying" })).toBe(true);
+  });
+});
+
+describe("canViewRequest subscriber flag", () => {
+  test("subscriber flag grants access to a third party", () => {
+    expect(canViewRequest(other, req, false)).toBe(false);
+    expect(canViewRequest(other, req, true)).toBe(true);
+  });
+  test("default param keeps backward compatibility", () => {
+    expect(canViewRequest(owner, req)).toBe(true);
+    expect(canViewRequest(admin, req)).toBe(true);
+  });
+});
+
+describe("canManageSubscribers", () => {
+  test("admin or requester only", () => {
+    expect(canManageSubscribers(admin, req)).toBe(true);
+    expect(canManageSubscribers(owner, req)).toBe(true);
+    expect(canManageSubscribers(other, req)).toBe(false);
+  });
+});
+
+describe("canRemoveSubscriber", () => {
+  test("self OR manager can remove", () => {
+    expect(canRemoveSubscriber(other, req, "b@kokilmetal.com.tr")).toBe(true); // self
+    expect(canRemoveSubscriber(admin, req, "b@kokilmetal.com.tr")).toBe(true);
+    expect(canRemoveSubscriber(owner, req, "b@kokilmetal.com.tr")).toBe(true);
+  });
+  test("third party cannot remove someone else", () => {
+    expect(canRemoveSubscriber(other, req, "c@kokilmetal.com.tr")).toBe(false);
+  });
+  test("self match is case-insensitive", () => {
+    expect(canRemoveSubscriber(other, req, "B@KOKILMETAL.COM.TR")).toBe(true);
   });
 });
