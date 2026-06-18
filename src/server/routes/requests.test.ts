@@ -618,3 +618,129 @@ describe("GET /api/requests/:id — subscribers in detail", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ─── POST/DELETE /api/requests/:id/subscribers ───────────────────────────────
+
+describe("POST /api/requests/:id/subscribers", () => {
+  const addHdr = (email = "a@kokilmetal.com.tr") => ({
+    cookie: authedCookie(email), "x-csrf-token": "tok",
+  });
+  function addForm(email: string) {
+    const fd = new FormData(); fd.set("email", email); return fd;
+  }
+
+  test("requester adds subscriber → 201 + welcome mail to subscriber", async () => {
+    const r = seedOwnRequest();
+    sent = [];
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: addHdr(), body: addForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(201);
+    expect(repo.isSubscriber(r.id, "c@kokilmetal.com.tr")).toBe(true);
+    expect(sent.some((m) => m.to === "c@kokilmetal.com.tr" && m.subject.includes("Takipçi"))).toBe(true);
+  });
+
+  test("admin adds subscriber → 201", async () => {
+    const r = seedOwnRequest();
+    sent = [];
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: addHdr("boss@kokilmetal.com.tr"), body: addForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(201);
+  });
+
+  test("idempotent: re-add same → 200, no duplicate welcome", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    sent = [];
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: addHdr(), body: addForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(200);
+    expect(sent).toEqual([]);
+  });
+
+  test("non-hosted-domain email → 400", async () => {
+    const r = seedOwnRequest();
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: addHdr(), body: addForm("c@gmail.com"),
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  test("adding requester's own email → 400", async () => {
+    const r = seedOwnRequest();
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: addHdr(), body: addForm("a@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  test("third party (not requester/admin) → 403", async () => {
+    const r = seedOwnRequest();
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: addHdr("d@kokilmetal.com.tr"), body: addForm("e@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(403);
+  });
+
+  test("non-existent request → 404", async () => {
+    const res = await handler(new Request(`http://x/api/requests/9999/subscribers`, {
+      method: "POST", headers: addHdr(), body: addForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(404);
+  });
+
+  test("CSRF missing → 403", async () => {
+    const r = seedOwnRequest();
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "POST", headers: { cookie: authedCookie() }, body: addForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("DELETE /api/requests/:id/subscribers", () => {
+  const hdr = (email = "a@kokilmetal.com.tr") => ({
+    cookie: authedCookie(email), "x-csrf-token": "tok",
+  });
+  function delForm(email: string) {
+    const fd = new FormData(); fd.set("email", email); return fd;
+  }
+
+  test("self-unsubscribe → 204", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "DELETE", headers: hdr("c@kokilmetal.com.tr"), body: delForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(204);
+    expect(repo.isSubscriber(r.id, "c@kokilmetal.com.tr")).toBe(false);
+  });
+
+  test("requester removes a subscriber → 204", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "DELETE", headers: hdr(), body: delForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(204);
+  });
+
+  test("third party removing someone else → 403", async () => {
+    const r = seedOwnRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "DELETE", headers: hdr("d@kokilmetal.com.tr"), body: delForm("c@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(403);
+  });
+
+  test("remove non-existent subscriber → 404", async () => {
+    const r = seedOwnRequest();
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/subscribers`, {
+      method: "DELETE", headers: hdr(), body: delForm("z@kokilmetal.com.tr"),
+    }));
+    expect(res.status).toBe(404);
+  });
+});

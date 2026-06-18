@@ -1,11 +1,12 @@
 // src/server/routes/requests.ts — JSON API: /api/my, /api/requests, /api/requests/:id, /api/requests/:id/reply
 import type { User } from "../../domain/authz";
-import { canViewRequest, canReply } from "../../domain/authz";
+import { canViewRequest, canReply, canManageSubscribers, canRemoveSubscriber } from "../../domain/authz";
+import { isHostedDomain } from "../../domain/hosted-domain";
 import { newRequestSchema, replySchema } from "../../domain/validation";
 import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
-import { newRequestAdmin, newRequestRequester, replyAdmin } from "../../mail/templates";
+import { newRequestAdmin, newRequestRequester, replyAdmin, subscriberWelcome } from "../../mail/templates";
 
 /** Parse a Bun Request's multipart body into a plain Record, normalizing
  * multiple values for the same key into an array (used for `files`). */
@@ -100,6 +101,45 @@ export async function handleRequests(
       200,
       extraHeaders,
     );
+  }
+
+  // POST /api/requests/:id/subscribers — add a subscriber (CC)
+  const subMatch = path.match(/^\/api\/requests\/(\d+)\/subscribers$/);
+  if (subMatch && method === "POST") {
+    const id = Number(subMatch[1]);
+    if (!Number.isInteger(id)) return json({ error: "not found" }, 404, extraHeaders);
+    const r = deps.repo.getRequest(id);
+    if (!r) return json({ error: "not found" }, 404, extraHeaders);
+    if (!canManageSubscribers(user, r)) return json({ error: "Yetkisiz" }, 403, extraHeaders);
+    const form = await parseForm(req);
+    const email = String(form.email ?? "").trim();
+    if (!email) return json({ errors: ["E-posta gerekli"] }, 400, extraHeaders);
+    if (!isHostedDomain(email, deps.config.googleHostedDomain))
+      return json({ errors: ["Yalnızca kurumsal hesaplar eklenebilir"] }, 400, extraHeaders);
+    if (email.toLowerCase() === r.requester_email.toLowerCase())
+      return json({ errors: ["Talep sahibi zaten bildirim alıyor"] }, 400, extraHeaders);
+    const added = deps.repo.addSubscriber(r.id, email, user.email, deps.now());
+    if (added) {
+      const mail = subscriberWelcome(r, deps.config.appBaseUrl, user.name);
+      deps.mailer.send(added.email, mail.subject, mail.html, mail.text).catch(() => {});
+      return json({ ok: true }, 201, extraHeaders);
+    }
+    return json({ ok: true }, 200, extraHeaders); // idempotent
+  }
+
+  // DELETE /api/requests/:id/subscribers — self-unsubscribe or manager removal
+  if (subMatch && method === "DELETE") {
+    const id = Number(subMatch[1]);
+    if (!Number.isInteger(id)) return json({ error: "not found" }, 404, extraHeaders);
+    const r = deps.repo.getRequest(id);
+    if (!r) return json({ error: "not found" }, 404, extraHeaders);
+    const form = await parseForm(req);
+    const email = String(form.email ?? "").trim();
+    if (!email) return json({ errors: ["E-posta gerekli"] }, 400, extraHeaders);
+    if (!canRemoveSubscriber(user, r, email)) return json({ error: "Yetkisiz" }, 403, extraHeaders);
+    const removed = deps.repo.removeSubscriber(r.id, email);
+    if (!removed) return json({ error: "not found" }, 404, extraHeaders);
+    return new Response(null, { status: 204, headers: new Headers({ ...extraHeaders }) });
   }
 
   // POST /api/requests/:id/reply
