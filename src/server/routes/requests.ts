@@ -6,7 +6,8 @@ import { newRequestSchema, replySchema } from "../../domain/validation";
 import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
-import { newRequestAdmin, newRequestRequester, replyAdmin, subscriberWelcome } from "../../mail/templates";
+import { newRequestAdmin, newRequestRequester, replyAdmin, subscriberWelcome, subscriberMessage } from "../../mail/templates";
+import { collectRecipients } from "../../mail/recipients";
 
 /** Parse a Bun Request's multipart body into a plain Record, normalizing
  * multiple values for the same key into an array (used for `files`). */
@@ -174,6 +175,17 @@ export async function handleRequests(
     const replyMail = replyAdmin(r, deps.config.appBaseUrl);
     for (const admin of deps.config.adminEmails) {
       deps.mailer.send(admin, replyMail.subject, replyMail.html, replyMail.text).catch(() => {});
+    }
+    // Subscribers get a neutral "message added" notice (requester is the actor → excluded).
+    const recipients = collectRecipients({
+      requesterEmail: r.requester_email,
+      subscribers: deps.repo.listSubscribers(r.id).map((s) => s.email),
+      includeSubscribers: true,
+      excludeEmail: user.email,
+    });
+    const subMail = subscriberMessage(r, deps.config.appBaseUrl, user.name, "requester");
+    for (const rcpt of recipients) {
+      deps.mailer.send(rcpt, subMail.subject, subMail.html, subMail.text).catch(() => {});
     }
     // 204 No Content — carry extraHeaders (e.g. csrf Set-Cookie).
     const resHeaders = new Headers({ ...extraHeaders });

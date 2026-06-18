@@ -6,7 +6,8 @@ import { collectFiles, processUploads, discardUploads } from "../uploads";
 import { json } from "../handler";
 import type { Deps } from "../handler";
 import { parseForm } from "./requests";
-import { questionRequester, decisionRequester } from "../../mail/templates";
+import { questionRequester, decisionRequester, subscriberMessage, subscriberDecision } from "../../mail/templates";
+import { collectRecipients } from "../../mail/recipients";
 import { requestToMarkdown } from "../../domain/export";
 import { buildDashboardStats } from "../../domain/stats";
 
@@ -99,6 +100,17 @@ export async function handleAdmin(
     // Best-effort mail to requester.
     const qMail = questionRequester(r, deps.config.appBaseUrl);
     deps.mailer.send(r.requester_email, qMail.subject, qMail.html, qMail.text).catch(() => {});
+    // Subscribers get a neutral "message added" notice (admin is the actor → excluded).
+    const qRecipients = collectRecipients({
+      requesterEmail: r.requester_email,
+      subscribers: deps.repo.listSubscribers(r.id).map((s) => s.email),
+      includeSubscribers: true,
+      excludeEmail: user.email,
+    });
+    const qSubMail = subscriberMessage(r, deps.config.appBaseUrl, user.name, "admin");
+    for (const rcpt of qRecipients) {
+      deps.mailer.send(rcpt, qSubMail.subject, qSubMail.html, qSubMail.text).catch(() => {});
+    }
     const resHeaders = new Headers({ ...extraHeaders });
     return new Response(null, { status: 204, headers: resHeaders });
   }
@@ -142,6 +154,17 @@ export async function handleAdmin(
     if (target !== "in_progress") {
       const dMail = decisionRequester(r, deps.config.appBaseUrl, target, parsed.data.reason);
       deps.mailer.send(r.requester_email, dMail.subject, dMail.html, dMail.text).catch(() => {});
+      // Subscribers get a neutral decision notice (admin is the actor → excluded).
+      const dRecipients = collectRecipients({
+        requesterEmail: r.requester_email,
+        subscribers: deps.repo.listSubscribers(r.id).map((s) => s.email),
+        includeSubscribers: true,
+        excludeEmail: user.email,
+      });
+      const dSubMail = subscriberDecision(r, deps.config.appBaseUrl, target, parsed.data.reason);
+      for (const rcpt of dRecipients) {
+        deps.mailer.send(rcpt, dSubMail.subject, dSubMail.html, dSubMail.text).catch(() => {});
+      }
     }
     const resHeaders = new Headers({ ...extraHeaders });
     return new Response(null, { status: 204, headers: resHeaders });

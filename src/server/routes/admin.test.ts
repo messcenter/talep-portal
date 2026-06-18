@@ -612,3 +612,49 @@ describe("GET /api/admin/requests/:id/export.md", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ─── Subscriber notifications on message + decision ──────────────────────────
+
+describe("subscriber notifications", () => {
+  const adminHdr = { cookie: adminCookie(), "x-csrf-token": "tok" };
+
+  test("admin question notifies subscribers + requester", async () => {
+    const r = seedRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    sent = [];
+    const fd = new FormData(); fd.set("body", "soru?");
+    const res = await handler(new Request(`http://x/api/admin/requests/${r.id}/message`, {
+      method: "POST", headers: adminHdr, body: fd,
+    }));
+    expect(res.status).toBe(204);
+    // subscriber gets neutral template
+    expect(sent.some((m) => m.to === "c@kokilmetal.com.tr" && m.subject === `Güncelleme: ${r.request_no}`)).toBe(true);
+    // requester still gets questionRequester
+    expect(sent.some((m) => m.to === r.requester_email)).toBe(true);
+    // admin (actor) does NOT get the neutral message
+    expect(sent.some((m) => m.to === "boss@kokilmetal.com.tr" && m.subject === `Güncelleme: ${r.request_no}`)).toBe(false);
+  });
+
+  test("decision accept notifies subscribers", async () => {
+    const r = seedRequest();
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    sent = [];
+    const fd = new FormData(); fd.set("decision", "accept");
+    await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: fd,
+    }));
+    expect(sent.some((m) => m.to === "c@kokilmetal.com.tr" && m.subject.includes("kabul edildi"))).toBe(true);
+  });
+
+  test("decision start (in_progress) does NOT notify subscribers", async () => {
+    const r = seedRequest();
+    repo.addMessageAndTransition(r.id, null, "accepted", "2026-01-01T00:00:00.000Z");
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    sent = [];
+    const fd = new FormData(); fd.set("decision", "start");
+    await handler(new Request(`http://x/api/admin/requests/${r.id}/decision`, {
+      method: "POST", headers: adminHdr, body: fd,
+    }));
+    expect(sent.some((m) => m.to === "c@kokilmetal.com.tr")).toBe(false);
+  });
+});

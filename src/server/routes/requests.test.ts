@@ -744,3 +744,25 @@ describe("DELETE /api/requests/:id/subscribers", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ─── Reply notifies subscribers ──────────────────────────────────────────────
+
+describe("POST /api/requests/:id/reply — subscriber notification", () => {
+  test("reply notifies subscribers with neutral 'Güncelleme' template", async () => {
+    const r = seedOwnRequest();
+    repo.addMessageAndTransition(r.id, { role: "admin", body: "soru?" }, "clarifying", "2026-01-01T00:00:00.000Z");
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    sent = [];
+    const fd = new FormData(); fd.set("body", "cevap");
+    const res = await handler(new Request(`http://x/api/requests/${r.id}/reply`, {
+      method: "POST",
+      headers: { cookie: authedCookie(), "x-csrf-token": "tok" },
+      body: fd,
+    }));
+    expect(res.status).toBe(204);
+    // admins still get replyAdmin; subscriber gets neutral message
+    expect(sent.some((m) => m.to === "c@kokilmetal.com.tr" && m.subject === `Güncelleme: ${r.request_no}`)).toBe(true);
+    // requester (actor) does NOT get notified about their own reply
+    expect(sent.some((m) => m.to === "a@kokilmetal.com.tr" && m.subject === `Güncelleme: ${r.request_no}`)).toBe(false);
+  });
+});
