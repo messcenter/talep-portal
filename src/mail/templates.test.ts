@@ -1,6 +1,7 @@
 import { expect, test, describe } from "bun:test";
 import {
   newRequestAdmin, newRequestRequester, replyAdmin, questionRequester, decisionRequester,
+  subscriberMessage, subscriberDecision, subscriberWelcome,
 } from "./templates";
 import type { RequestRow } from "../db/repo";
 
@@ -64,5 +65,36 @@ describe("mail templates", () => {
     const m = newRequestAdmin(row({ title: "<script>alert(1)</script>" }), base);
     expect(m.html).toContain("&lt;script&gt;");
     expect(m.html).not.toContain("<script>alert(1)</script>");
+  });
+});
+
+describe("subscriber templates", () => {
+  test("subscriberMessage: subject + /requests/ url + byName + role", () => {
+    const m = subscriberMessage(row(), base, "Ayşe", "admin");
+    expect(m.subject).toBe("Güncelleme: TALEP-0007");
+    expect(m.html).toContain(`${base}/requests/7`);
+    expect(m.html).toContain("Ayşe");
+    expect(m.html).toContain("yönetici");
+  });
+  test("subscriberMessage: requester role label", () => {
+    const m = subscriberMessage(row(), base, "Ali", "requester");
+    expect(m.html).toContain("talep sahibi");
+  });
+  test("subscriberDecision: done label + reason escaped", () => {
+    const m = subscriberDecision(row(), base, "done", "x <b>");
+    expect(m.subject).toBe("Takip ettiğiniz talep tamamlandı: TALEP-0007");
+    expect(m.html).toContain("tamamlandı");
+    expect(m.html).toContain("x &lt;b&gt;");
+  });
+  test("subscriberDecision: cancelled without reason has no Not block", () => {
+    const m = subscriberDecision(row(), base, "cancelled");
+    expect(m.subject).toContain("iptal edildi");
+    expect(m.html).not.toContain("Not:");
+  });
+  test("subscriberWelcome: addedByName + /requests/ url", () => {
+    const m = subscriberWelcome(row(), base, "Mehmet");
+    expect(m.subject).toBe("Takipçi olarak eklendiniz: TALEP-0007");
+    expect(m.html).toContain("Mehmet");
+    expect(m.html).toContain(`${base}/requests/7`);
   });
 });

@@ -130,3 +130,82 @@ export function decisionRequester(
     text: `Talep ${label}: ${r.request_no}${reasonText}\nGörüntüle: ${url}`,
   };
 }
+
+function detailUrl(
+  baseUrl: string,
+  id: number,
+  audience: "requester" | "admin" | "subscriber",
+): string {
+  return audience === "admin"
+    ? `${baseUrl}/admin/requests/${id}`
+    : `${baseUrl}/requests/${id}`;
+}
+
+/** Neutral "a message was added" notice for subscribers. */
+export function subscriberMessage(
+  r: RequestRow,
+  baseUrl: string,
+  byName: string,
+  authorRole: "admin" | "requester",
+): Mail {
+  const url = detailUrl(baseUrl, r.id, "subscriber");
+  const roleTr = authorRole === "admin" ? "yönetici" : "talep sahibi";
+  return {
+    subject: `Güncelleme: ${r.request_no}`,
+    html: emailLayout({
+      heading: "Takip ettiğiniz talepte güncelleme var",
+      bodyHtml: `<p style="margin:0 0 16px;"><strong>${esc(r.request_no)}</strong> — ${esc(r.title)} talebine ${esc(byName)} (${roleTr}) bir mesaj ekledi.</p>`,
+      ctaText: "Talebi görüntüle",
+      ctaUrl: url,
+    }),
+    text: `Güncelleme: ${r.request_no} — ${byName} (${roleTr}) bir mesaj ekledi.\nGörüntüle: ${url}`,
+  };
+}
+
+/** Neutral decision notice for subscribers (in_progress is never sent). */
+export function subscriberDecision(
+  r: RequestRow,
+  baseUrl: string,
+  target: "accepted" | "rejected" | "done" | "cancelled",
+  reason?: string,
+): Mail {
+  const url = detailUrl(baseUrl, r.id, "subscriber");
+  const LABEL = {
+    accepted: "kabul edildi",
+    rejected: "reddedildi",
+    done: "tamamlandı",
+    cancelled: "iptal edildi",
+  } as const;
+  const label = LABEL[target];
+  const reasonHtml = reason ? `<p style="margin:0 0 16px;"><strong>Not:</strong> ${esc(reason)}</p>` : "";
+  const reasonText = reason ? `\nNot: ${reason}` : "";
+  return {
+    subject: `Takip ettiğiniz talep ${label}: ${r.request_no}`,
+    html: emailLayout({
+      heading: `Takip ettiğiniz talep ${label}`,
+      bodyHtml: `<p style="margin:0 0 16px;"><strong>${esc(r.request_no)}</strong> — ${esc(r.title)} talebi ${label}.</p>` + reasonHtml,
+      ctaText: "Talebi görüntüle",
+      ctaUrl: url,
+    }),
+    text: `Takip ettiğiniz talep ${label}: ${r.request_no}${reasonText}\nGörüntüle: ${url}`,
+  };
+}
+
+/** Welcome notice to a freshly-added subscriber. */
+export function subscriberWelcome(
+  r: RequestRow,
+  baseUrl: string,
+  addedByName: string,
+): Mail {
+  const url = detailUrl(baseUrl, r.id, "subscriber");
+  return {
+    subject: `Takipçi olarak eklendiniz: ${r.request_no}`,
+    html: emailLayout({
+      heading: "Bir talebe takipçi olarak eklendiniz",
+      bodyHtml: `<p style="margin:0 0 16px;">${esc(addedByName)} sizi <strong>${esc(r.request_no)}</strong> — ${esc(r.title)} talebine takipçi olarak ekledi. Bu talepte olan bitenden e-posta ile haberdar olacaksınız.</p>`,
+      ctaText: "Talebi görüntüle",
+      ctaUrl: url,
+    }),
+    text: `${addedByName} sizi ${r.request_no} — ${r.title} talebine takipçi olarak ekledi.\nGörüntüle: ${url}`,
+  };
+}
