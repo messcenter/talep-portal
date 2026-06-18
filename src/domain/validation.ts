@@ -16,6 +16,11 @@ export const newRequestSchema = z.object({
   description: req(5000, "Açıklama"),
   expected_benefit: req(2000, "Beklenen fayda"),
   priority: z.enum(PRIORITIES, { message: "Öncelik seçiniz" }),
+  related_departments: z
+    .array(z.string().trim().min(1).max(120))
+    .max(10, "En fazla 10 ilgili departman")
+    .optional()
+    .default([]),
 });
 export type NewRequestInput = z.infer<typeof newRequestSchema>;
 

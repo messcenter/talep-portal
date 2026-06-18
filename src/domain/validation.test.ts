@@ -16,6 +16,19 @@ describe("newRequestSchema", () => {
   test("accepts valid input", () => {
     expect(newRequestSchema.safeParse(valid).success).toBe(true);
   });
+  test("related_departments optional, defaults to []", () => {
+    const r = newRequestSchema.safeParse(valid);
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.related_departments).toEqual([]);
+  });
+  test("related_departments accepts up to 10", () => {
+    const arr = Array.from({ length: 10 }, (_, i) => `D${i}`);
+    expect(newRequestSchema.safeParse({ ...valid, related_departments: arr }).success).toBe(true);
+  });
+  test("related_departments rejects more than 10", () => {
+    const arr = Array.from({ length: 11 }, (_, i) => `D${i}`);
+    expect(newRequestSchema.safeParse({ ...valid, related_departments: arr }).success).toBe(false);
+  });
   test("rejects empty title", () => {
     expect(newRequestSchema.safeParse({ ...valid, title: "" }).success).toBe(
       false,
