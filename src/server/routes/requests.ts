@@ -9,6 +9,23 @@ import type { Deps } from "../handler";
 import { newRequestAdmin, newRequestRequester, replyAdmin, subscriberWelcome, subscriberMessage } from "../../mail/templates";
 import { collectRecipients } from "../../mail/recipients";
 
+/** Collect multi-value FormData entries for `related_departments` into a
+ * deduplicated, trimmed string array. */
+export function collectRelatedDepartments(form: Record<string, any>): string[] {
+  const raw = form.related_departments;
+  const arr = Array.isArray(raw) ? raw : raw != null ? [raw] : [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of arr) {
+    const s = String(v).trim();
+    if (s && !seen.has(s)) {
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
 /** Parse a Bun Request's multipart body into a plain Record, normalizing
  * multiple values for the same key into an array (used for `files`). */
 export async function parseForm(req: Request): Promise<Record<string, any>> {
@@ -58,6 +75,17 @@ export async function handleRequests(
     if (parsed.data.module_area && !deps.repo.listModuleNames(dept.id).includes(parsed.data.module_area)) {
       return json({ errors: ["Geçersiz modül"] }, 400, extraHeaders);
     }
+    // Related departments: each must be a managed department, and the main
+    // department may not appear among them.
+    const related = collectRelatedDepartments(form);
+    for (const d of related) {
+      if (!deps.repo.getDepartmentByName(d)) {
+        return json({ errors: ["Geçersiz ilgili departman"] }, 400, extraHeaders);
+      }
+    }
+    if (related.some((d) => d.toLowerCase() === parsed.data.department.toLowerCase())) {
+      return json({ errors: ["Ana departman ilgili listesinde olamaz"] }, 400, extraHeaders);
+    }
     const up = await processUploads(collectFiles(form), deps.storage);
     if (!up.ok) return json({ errors: up.errors }, 400, extraHeaders);
     let r;
@@ -66,6 +94,7 @@ export async function handleRequests(
         { ...parsed.data, requester_name: user.name, requester_email: user.email },
         deps.now(),
         up.attachments,
+        related,
       );
     } catch (err) {
       await discardUploads(deps.storage, up.attachments);
@@ -98,6 +127,7 @@ export async function handleRequests(
         attachments: deps.repo.listAttachmentsByRequest(r.id),
         subscribers: deps.repo.listSubscribers(r.id),
         isSubscriber: isSub,
+        related_departments: deps.repo.listRelatedDepartments(r.id),
       },
       200,
       extraHeaders,

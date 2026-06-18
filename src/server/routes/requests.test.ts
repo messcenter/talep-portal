@@ -775,3 +775,66 @@ describe("POST /api/requests/:id/reply — subscriber notification", () => {
     expect(sent.some((m) => m.to === "a@kokilmetal.com.tr" && m.subject === `Güncelleme: ${r.request_no}`)).toBe(false);
   });
 });
+
+// ─── POST /api/requests — related departments ────────────────────────────────
+
+describe("POST /api/requests — related departments", () => {
+  beforeEach(() => {
+    seedDept("IT");
+    seedDept("Lojistik");
+    seedDept("Üretim");
+  });
+
+  function formWith(related: string[]) {
+    const fd = validFormData(); // department defaults to "IT"
+    for (const d of related) fd.append("related_departments", d);
+    return fd;
+  }
+  const hdr = { cookie: authedCookie(), "x-csrf-token": "tok" };
+
+  test("creates request with related departments", async () => {
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST", headers: hdr, body: formWith(["Lojistik", "Üretim"]),
+    }));
+    expect(res.status).toBe(201);
+    const id = (await res.json() as { id: number }).id;
+    expect(repo.listRelatedDepartments(id)).toEqual(["Lojistik", "Üretim"]);
+  });
+
+  test("unmanaged related department → 400", async () => {
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST", headers: hdr, body: formWith(["Bilinmeyen"]),
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  test("main department repeated in related → 400", async () => {
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST", headers: hdr, body: formWith(["IT"]),
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  test("duplicate related departments are deduped", async () => {
+    const res = await handler(new Request("http://x/api/requests", {
+      method: "POST", headers: hdr, body: formWith(["Lojistik", "Lojistik"]),
+    }));
+    expect(res.status).toBe(201);
+    const id = (await res.json() as { id: number }).id;
+    expect(repo.listRelatedDepartments(id)).toEqual(["Lojistik"]);
+  });
+
+  test("GET detail includes related_departments", async () => {
+    const r = repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: "IT", application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "b", priority: "high" },
+      "2026-01-01T00:00:00.000Z", [], ["Lojistik"],
+    );
+    const res = await handler(new Request(`http://x/api/requests/${r.id}`, {
+      headers: { cookie: authedCookie() },
+    }));
+    expect((await res.json() as any).related_departments).toEqual(["Lojistik"]);
+  });
+});

@@ -667,3 +667,51 @@ describe("subscriber notifications", () => {
     expect(sent.some((m) => m.to === "c@kokilmetal.com.tr")).toBe(false);
   });
 });
+
+// ─── GET /api/admin/requests?department= ────────────────────────────────────
+
+describe("GET /api/admin/requests department filter", () => {
+  function mkReq(dept: string, related: string[] = []) {
+    return repo.createRequest(
+      { requester_name: "A", requester_email: "a@kokilmetal.com.tr",
+        department: dept, application: "ERP", module_area: "",
+        request_type: "feature", title: "t", description: "d",
+        expected_benefit: "b", priority: "high" },
+      "2026-01-01T00:00:00.000Z", [], related,
+    );
+  }
+
+  test("matches main OR related department", async () => {
+    const r1 = mkReq("Üretim", ["Lojistik"]); // related match
+    const r2 = mkReq("Lojistik");             // main match
+    const r3 = mkReq("IT");                    // no match
+    const res = await handler(new Request("http://x/api/admin/requests?department=Lojistik", {
+      headers: { cookie: adminCookie() },
+    }));
+    const ids = (await res.json() as any[]).map((r) => r.id);
+    expect(ids).toContain(r1.id);
+    expect(ids).toContain(r2.id);
+    expect(ids).not.toContain(r3.id);
+  });
+
+  test("combines with status filter", async () => {
+    const r = mkReq("Üretim", ["Lojistik"]);
+    repo.updateStatus(r.id, "accepted");
+    const ok = await handler(new Request("http://x/api/admin/requests?department=Lojistik&status=accepted", {
+      headers: { cookie: adminCookie() },
+    }));
+    expect((await ok.json() as any[]).map((x) => x.id)).toContain(r.id);
+    const nope = await handler(new Request("http://x/api/admin/requests?department=Lojistik&status=new", {
+      headers: { cookie: adminCookie() },
+    }));
+    expect((await nope.json() as any[]).map((x) => x.id)).not.toContain(r.id);
+  });
+
+  test("no department filter → all requests", async () => {
+    mkReq("IT");
+    const res = await handler(new Request("http://x/api/admin/requests", {
+      headers: { cookie: adminCookie() },
+    }));
+    expect((await res.json() as any[]).length).toBe(1);
+  });
+});

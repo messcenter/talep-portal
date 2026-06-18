@@ -24,12 +24,13 @@ export async function handleAdmin(
   extraHeaders: Record<string, string>,
   deps: Deps,
 ): Promise<Response | null> {
-  // GET /api/admin/requests?status=
+  // GET /api/admin/requests?status=&priority=&department=
   if (path === "/api/admin/requests" && method === "GET") {
     if (!user.isAdmin) return json({ error: "Yetkisiz" }, 403, extraHeaders);
     const url = new URL(req.url);
     const status = url.searchParams.get("status") ?? undefined;
-    const rows = deps.repo.listAll({ status });
+    const department = url.searchParams.get("department") ?? undefined;
+    const rows = deps.repo.listAll({ status, department });
     return json(rows, 200, extraHeaders);
   }
 
