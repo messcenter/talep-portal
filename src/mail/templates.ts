@@ -9,6 +9,23 @@ export interface Mail {
 
 const PRIMARY = "#0F4C81";
 
+/** Turkish labels for non-silent decision targets (in_progress is intentionally absent). */
+const DECISION_LABEL_TR: Record<"accepted" | "rejected" | "done" | "cancelled", string> = {
+  accepted: "kabul edildi",
+  rejected: "reddedildi",
+  done: "tamamlandı",
+  cancelled: "iptal edildi",
+};
+
+/** Shared HTML + text "Not:" block for an optional decision reason. */
+function reasonBlock(reason?: string): { html: string; text: string } {
+  if (!reason) return { html: "", text: "" };
+  return {
+    html: `<p style="margin:0 0 16px;"><strong>Not:</strong> ${esc(reason)}</p>`,
+    text: `\nNot: ${reason}`,
+  };
+}
+
 // Small local HTML-escape (kept here to avoid src/mail depending on src/server).
 function esc(s: string): string {
   return s
@@ -110,24 +127,17 @@ export function decisionRequester(
   reason?: string,
 ): Mail {
   const url = `${baseUrl}/requests/${r.id}`;
-  const LABEL = {
-    accepted: "kabul edildi",
-    rejected: "reddedildi",
-    done: "tamamlandı",
-    cancelled: "iptal edildi",
-  } as const;
-  const label = LABEL[target];
-  const reasonHtml = reason ? `<p style="margin:0 0 16px;"><strong>Not:</strong> ${esc(reason)}</p>` : "";
-  const reasonText = reason ? `\nNot: ${reason}` : "";
+  const label = DECISION_LABEL_TR[target];
+  const rb = reasonBlock(reason);
   return {
     subject: `Talep ${label}: ${r.request_no}`,
     html: emailLayout({
       heading: `Talep ${label}`,
-      bodyHtml: `<p style="margin:0 0 16px;"><strong>${esc(r.request_no)}</strong> talebiniz ${label}.</p>` + reasonHtml,
+      bodyHtml: `<p style="margin:0 0 16px;"><strong>${esc(r.request_no)}</strong> talebiniz ${label}.</p>` + rb.html,
       ctaText: "Talebi görüntüle",
       ctaUrl: url,
     }),
-    text: `Talep ${label}: ${r.request_no}${reasonText}\nGörüntüle: ${url}`,
+    text: `Talep ${label}: ${r.request_no}${rb.text}\nGörüntüle: ${url}`,
   };
 }
 
@@ -170,24 +180,17 @@ export function subscriberDecision(
   reason?: string,
 ): Mail {
   const url = detailUrl(baseUrl, r.id, "subscriber");
-  const LABEL = {
-    accepted: "kabul edildi",
-    rejected: "reddedildi",
-    done: "tamamlandı",
-    cancelled: "iptal edildi",
-  } as const;
-  const label = LABEL[target];
-  const reasonHtml = reason ? `<p style="margin:0 0 16px;"><strong>Not:</strong> ${esc(reason)}</p>` : "";
-  const reasonText = reason ? `\nNot: ${reason}` : "";
+  const label = DECISION_LABEL_TR[target];
+  const rb = reasonBlock(reason);
   return {
     subject: `Takip ettiğiniz talep ${label}: ${r.request_no}`,
     html: emailLayout({
       heading: `Takip ettiğiniz talep ${label}`,
-      bodyHtml: `<p style="margin:0 0 16px;"><strong>${esc(r.request_no)}</strong> — ${esc(r.title)} talebi ${label}.</p>` + reasonHtml,
+      bodyHtml: `<p style="margin:0 0 16px;"><strong>${esc(r.request_no)}</strong> — ${esc(r.title)} talebi ${label}.</p>` + rb.html,
       ctaText: "Talebi görüntüle",
       ctaUrl: url,
     }),
-    text: `Takip ettiğiniz talep ${label}: ${r.request_no}${reasonText}\nGörüntüle: ${url}`,
+    text: `Takip ettiğiniz talep ${label}: ${r.request_no}${rb.text}\nGörüntüle: ${url}`,
   };
 }
 
