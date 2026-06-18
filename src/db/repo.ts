@@ -55,6 +55,13 @@ export type Department = { id: number; name: string; created_at: string };
 export type Application = { id: number; name: string; created_at: string };
 export type ModuleRow = { id: number; department_id: number; name: string; created_at: string };
 export type DepartmentWithModules = { id: number; name: string; modules: { id: number; name: string }[] };
+export type SubscriberRow = {
+  id: number;
+  request_id: number;
+  email: string;
+  added_by_email: string;
+  created_at: string;
+};
 
 export type Repo = ReturnType<typeof makeRepo>;
 
@@ -275,6 +282,52 @@ export function makeRepo(db: Database) {
     },
     listApplications(): Application[] {
       return db.query(`SELECT * FROM applications ORDER BY name`).all() as Application[];
+    },
+
+    addSubscriber(
+      requestId: number,
+      email: string,
+      addedByEmail: string,
+      createdAt: string,
+    ): SubscriberRow | null {
+      const e = email.trim().toLowerCase();
+      const by = addedByEmail.trim().toLowerCase();
+      const existing = db
+        .query<SubscriberRow, [number, string]>(
+          "SELECT * FROM subscribers WHERE request_id = ? AND email = ?",
+        )
+        .get(requestId, e);
+      if (existing) return null;
+      return db
+        .query<SubscriberRow, any>(
+          `INSERT INTO subscribers (request_id, email, added_by_email, created_at)
+           VALUES (?, ?, ?, ?) RETURNING *`,
+        )
+        .get(requestId, e, by, createdAt) as SubscriberRow;
+    },
+
+    removeSubscriber(requestId: number, email: string): boolean {
+      const res = db
+        .query("DELETE FROM subscribers WHERE request_id = ? AND email = ?")
+        .run(requestId, email.trim().toLowerCase());
+      return res.changes > 0;
+    },
+
+    isSubscriber(requestId: number, email: string): boolean {
+      const row = db
+        .query<{ id: number }, [number, string]>(
+          "SELECT id FROM subscribers WHERE request_id = ? AND email = ?",
+        )
+        .get(requestId, email.trim().toLowerCase());
+      return row != null;
+    },
+
+    listSubscribers(requestId: number): SubscriberRow[] {
+      return db
+        .query<SubscriberRow, [number]>(
+          "SELECT * FROM subscribers WHERE request_id = ? ORDER BY id ASC",
+        )
+        .all(requestId);
     },
 
     addMessageAndTransition(

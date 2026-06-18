@@ -54,6 +54,15 @@ function schema(db: Database): Database {
       name TEXT NOT NULL UNIQUE,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE subscribers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      email TEXT NOT NULL,
+      added_by_email TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(request_id, email)
+    );
+    CREATE INDEX idx_subscribers_request ON subscribers(request_id);
   `);
   return db;
 }

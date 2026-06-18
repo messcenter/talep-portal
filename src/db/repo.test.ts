@@ -49,6 +49,15 @@ function seedSchema(db: Database): Database {
       name TEXT NOT NULL UNIQUE,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE subscribers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      email TEXT NOT NULL,
+      added_by_email TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(request_id, email)
+    );
+    CREATE INDEX idx_subscribers_request ON subscribers(request_id);
   `);
   return db;
 }
@@ -250,5 +259,45 @@ describe("applications CRUD", () => {
     repo.deleteApplication(a.id);
     expect(repo.getApplication(a.id)).toBeNull();
     expect(repo.listApplications()).toEqual([]);
+  });
+});
+
+describe("repo.subscribers", () => {
+  test("addSubscriber inserts and returns row; normalizes email lowercase", () => {
+    const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
+    const s1 = repo.addSubscriber(
+      r.id, "C@KOKILMETAL.COM.TR", "A@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z",
+    );
+    expect(s1?.email).toBe("c@kokilmetal.com.tr");
+    expect(s1?.added_by_email).toBe("a@kokilmetal.com.tr");
+  });
+
+  test("addSubscriber is idempotent (returns null on duplicate)", () => {
+    const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
+    expect(repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "t")).not.toBeNull();
+    expect(repo.addSubscriber(r.id, "C@KOKILMETAL.COM.TR", "a@kokilmetal.com.tr", "t")).toBeNull();
+  });
+
+  test("isSubscriber + listSubscribers", () => {
+    const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-02T00:00:00.000Z");
+    repo.addSubscriber(r.id, "d@kokilmetal.com.tr", "a@kokilmetal.com.tr", "2026-01-03T00:00:00.000Z");
+    expect(repo.isSubscriber(r.id, "C@kokilmetal.com.tr")).toBe(true);
+    expect(repo.isSubscriber(r.id, "z@kokilmetal.com.tr")).toBe(false);
+    const list = repo.listSubscribers(r.id);
+    expect(list.map((s) => s.email)).toEqual(["c@kokilmetal.com.tr", "d@kokilmetal.com.tr"]);
+  });
+
+  test("removeSubscriber returns true then false", () => {
+    const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
+    repo.addSubscriber(r.id, "c@kokilmetal.com.tr", "a@kokilmetal.com.tr", "t");
+    expect(repo.removeSubscriber(r.id, "C@kokilmetal.com.tr")).toBe(true);
+    expect(repo.removeSubscriber(r.id, "c@kokilmetal.com.tr")).toBe(false);
+    expect(repo.isSubscriber(r.id, "c@kokilmetal.com.tr")).toBe(false);
+  });
+
+  test("listSubscribers for request with none returns []", () => {
+    const r = repo.createRequest(baseInput, "2026-01-01T00:00:00.000Z");
+    expect(repo.listSubscribers(r.id)).toEqual([]);
   });
 });

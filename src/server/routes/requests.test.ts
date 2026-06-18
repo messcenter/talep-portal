@@ -49,6 +49,16 @@ function schema(db: Database): Database {
       message_id INTEGER REFERENCES messages(id),
       storage_key TEXT NOT NULL, original_name TEXT NOT NULL,
       mime TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL);`);
+  db.exec(`
+    CREATE TABLE subscribers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL REFERENCES requests(id),
+      email TEXT NOT NULL,
+      added_by_email TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(request_id, email)
+    );
+    CREATE INDEX idx_subscribers_request ON subscribers(request_id);`);
   return db;
 }
 
